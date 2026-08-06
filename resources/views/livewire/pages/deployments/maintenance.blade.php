@@ -15,6 +15,16 @@
                 حذف الكاش
             </x-ui.button>
             <x-ui.button
+                variant="secondary"
+                icon="link"
+                wire:click="createStorageLink"
+                wire:loading.attr="disabled"
+                wire:target="createStorageLink"
+                :loading="$isLinkingStorage"
+            >
+                إنشاء رابط التخزين
+            </x-ui.button>
+            <x-ui.button
                 variant="primary"
                 icon="arrow-path"
                 wire:click="updatePackages"
@@ -65,6 +75,42 @@
                     <li>قد يستغرق وقتًا أطول من حذف الكاش.</li>
                     <li>يُفضّل مراجعة الناتج قبل الاعتماد عليه في الإنتاج.</li>
                 </ul>
+            </div>
+        </x-ui.card>
+
+        <x-ui.card padding>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">رابط التخزين</h2>
+                    <x-ui.badge :variant="$storageLinkExists ? 'success' : 'danger'" dot size="sm">
+                        {{ $storageLinkExists ? 'الرابط موجود' : 'الرابط غير موجود' }}
+                    </x-ui.badge>
+                </div>
+                <p class="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                    تُعرض الملفات المرفوعة (الشعار، صور المندوبين، المرفقات...) تلقائيًا عبر مسار
+                    <code class="font-mono text-xs" dir="ltr">/media</code>
+                    الذي يقدّمه النظام مباشرة من
+                    <code class="font-mono text-xs" dir="ltr">storage/app/public</code>
+                    — دون الحاجة لأي رابط رمزي أو أوامر نظام (مناسب للاستضافة المشتركة المقفلة مثل Hostinger).
+                </p>
+                <ul class="space-y-2 text-sm text-[var(--color-text-secondary)]">
+                    <li>هذا الزر اختياري: يحسّن الأداء فقط بجعل الملفات تُقدَّم مباشرة من مجلد public.</li>
+                    <li>لا يحذف أي بيانات أو ملفات موجودة.</li>
+                    <li>على الاستضافات التي تمنع symlink تبقى الملفات تعمل عبر /media دون هذا الرابط.</li>
+                </ul>
+                <div class="pt-1">
+                    <x-ui.button
+                        variant="secondary"
+                        size="sm"
+                        icon="link"
+                        wire:click="createStorageLink"
+                        wire:loading.attr="disabled"
+                        wire:target="createStorageLink"
+                        :loading="$isLinkingStorage"
+                    >
+                        {{ $storageLinkExists ? 'إعادة إنشاء الرابط' : 'إنشاء الرابط' }}
+                    </x-ui.button>
+                </div>
             </div>
         </x-ui.card>
     </div>

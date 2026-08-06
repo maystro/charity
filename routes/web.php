@@ -1,18 +1,20 @@
 <?php
 
+use App\Http\Controllers\StorageFileController;
 use App\Http\Middleware\EnsureRouteAccess;
 use App\Livewire\AidRequests\CreateAidRequest;
 use App\Livewire\AidRequests\Index as AidRequestIndex;
 use App\Livewire\AidRequests\ShowAidRequest;
 use App\Livewire\Alerts\AlertsIndex;
 use App\Livewire\Backups\Index as BackupsIndex;
+use App\Livewire\Debug;
 use App\Livewire\Delivery\DeliveryIndex;
+use App\Livewire\Deployments\AllowedPaths as DeploymentsAllowedPaths;
 use App\Livewire\Deployments\CreateRelease as DeploymentsCreate;
+use App\Livewire\Deployments\FtpSettings as DeploymentsFtpSettings;
 use App\Livewire\Deployments\Index as DeploymentsIndex;
 use App\Livewire\Deployments\Maintenance as DeploymentsMaintenance;
 use App\Livewire\Deployments\ShowRelease as DeploymentsShow;
-use App\Livewire\Deployments\AllowedPaths as DeploymentsAllowedPaths;
-use App\Livewire\Deployments\FtpSettings as DeploymentsFtpSettings;
 use App\Livewire\Deployments\SmartDeployment as DeploymentsSmartDeployment;
 use App\Livewire\Donations\Create as DonationCreate;
 use App\Livewire\Donations\Index as DonationIndex;
@@ -39,7 +41,6 @@ use App\Livewire\Visits\Edit as VisitEdit;
 use App\Livewire\Visits\Execute as VisitExecute;
 use App\Livewire\Visits\Index as VisitIndex;
 use App\Livewire\Visits\Show as VisitShow;
-use App\Livewire\Debug;
 use App\Models\AidRequestAttachment;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -69,6 +70,19 @@ Route::post('/logout', function () {
 |--------------------------------------------------------------------------
 */
 Route::match(['HEAD', 'GET'], '/health/ping', fn () => response()->noContent());
+
+/*
+|--------------------------------------------------------------------------
+| Public Media Files
+|--------------------------------------------------------------------------
+| Serves files from storage/app/public through Laravel (no symlink needed).
+| Hostinger blocks direct /storage/ URLs (403) and disables exec()/symlink(),
+| so we use a neutral /media/ prefix that reaches the framework.
+|--------------------------------------------------------------------------
+*/
+Route::get('/media/{path}', StorageFileController::class)
+    ->where('path', '.*')
+    ->name('media.file');
 
 /*
 |--------------------------------------------------------------------------
