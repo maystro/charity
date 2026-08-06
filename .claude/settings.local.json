@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php /Users/maystro/Desktop/MyData/dev/web-apps/laravel13/charity/artisan migrate --no-interaction)",
+      "Bash(php /Users/maystro/Desktop/MyData/dev/web-apps/laravel13/charity/artisan test --compact --filter=Visit)",
+      "Bash(php /Users/maystro/Desktop/MyData/dev/web-apps/laravel13/charity/artisan test --compact)",
+      "Bash(php /Users/maystro/Desktop/MyData/dev/web-apps/laravel13/charity/vendor/bin/pint --dirty --format agent)",
+      "Bash(php /Users/maystro/Desktop/MyData/dev/web-apps/laravel13/charity/artisan test --compact --filter=Donation)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ],
+  "enableAllProjectMcpServers": true
+}
