@@ -10,8 +10,6 @@ use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 #[Layout('layouts.app', ['title' => 'المسارات المسموحة'])]
 class AllowedPaths extends Component
@@ -96,6 +94,46 @@ class AllowedPaths extends Component
     public function selectedCount(): int
     {
         return count($this->selected);
+    }
+
+    /**
+     * Root-level entries that exist but are always excluded from deployment.
+     * Shown for transparency only — never selectable or saved.
+     *
+     * @return array<int, array{path: string, label: string, depth: int, type: string}>
+     */
+    #[Computed]
+    public function disabledEntries(): array
+    {
+        $entries = [];
+
+        foreach (scandir(base_path()) ?: [] as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            if (! $this->isExcluded($item)) {
+                continue;
+            }
+
+            $entries[] = [
+                'path' => $item,
+                'label' => $item,
+                'depth' => 0,
+                'type' => is_dir(base_path().'/'.$item) ? 'dir' : 'file',
+            ];
+        }
+
+        usort($entries, function (array $a, array $b) {
+            // Folders first, then files — both alphabetical.
+            if (($a['type'] === 'dir') !== ($b['type'] === 'dir')) {
+                return $a['type'] === 'dir' ? -1 : 1;
+            }
+
+            return strcmp(mb_strtolower($a['label']), mb_strtolower($b['label']));
+        });
+
+        return $entries;
     }
 
     public function selectAll(): void

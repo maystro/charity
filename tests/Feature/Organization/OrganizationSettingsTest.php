@@ -34,7 +34,7 @@ class OrganizationSettingsTest extends TestCase
         Volt::test('sidebar')
             ->assertSee('جمعية التضامن الأجتماعي - بني سويف')
             ->assertSee('جمعية عهد الخير للتنمية والخدمات')
-            ->assertSee(Storage::disk('public')->url('organization/logo.png'));
+            ->assertSee(asset('media/organization/logo.png'));
     }
 
     public function test_admin_can_save_organization_profile_and_sidebar_uses_it(): void
@@ -62,6 +62,6 @@ class OrganizationSettingsTest extends TestCase
         Volt::test('sidebar')
             ->assertSee('جمعية النور')
             ->assertSee('خدمة المجتمع')
-            ->assertSee(Storage::disk('public')->url($logoPath));
+            ->assertSee(asset('media/'.$logoPath));
     }
 }

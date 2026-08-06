@@ -32,7 +32,7 @@ class LoginFlowTest extends TestCase
         $response->assertSee('inline-flex items-center justify-center text-white font-semibold text-base', false);
         $response->assertSee('جمعية التضامن الأجتماعي - بني سويف');
         $response->assertSee('جمعية عهد الخير للتنمية والخدمات');
-        $response->assertSee('storage/organization/logo.png');
+        $response->assertSee('media/organization/logo.png');
     }
 
     public function test_authenticated_user_is_redirected_from_login(): void

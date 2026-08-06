@@ -99,7 +99,7 @@ class extends Component
 
         $logoPath = SystemSetting::get('organization_logo_path');
         $this->organizationLogoUrl = $logoPath && Storage::disk('public')->exists($logoPath)
-            ? Storage::disk('public')->url($logoPath)
+            ? asset('media/'.ltrim($logoPath, '/'))
             : null;
     }
 

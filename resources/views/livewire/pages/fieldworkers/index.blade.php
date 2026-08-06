@@ -65,7 +65,7 @@
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     @if($fieldworker->user?->photo)
-                                        <img src="{{ Storage::url($fieldworker->user->photo) }}" alt="{{ $fieldworker->name }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--color-border)]" />
+                                        <img src="{{ asset('media/'.ltrim($fieldworker->user->photo, '/')) }}" alt="{{ $fieldworker->name }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--color-border)]" />
                                     @else
                                         <div class="w-9 h-9 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] flex items-center justify-center text-xs font-semibold">
                                             {{ mb_substr($fieldworker->name, 0, 1) }}

@@ -80,7 +80,7 @@ class DeploymentAllowedPathsTest extends TestCase
         );
 
         // اللقطة تحترم الـ allowlist المحفوظ
-        $snapshot = (new ProjectSnapshot())->scan();
+        $snapshot = (new ProjectSnapshot)->scan();
         $this->assertArrayHasKey('app/Models/User.php', $snapshot);
         $this->assertArrayHasKey('composer.json', $snapshot);
         $this->assertArrayNotHasKey('routes/web.php', $snapshot);
@@ -121,5 +121,40 @@ class DeploymentAllowedPathsTest extends TestCase
         );
 
         $this->assertDatabaseCount('deployment_allowed_paths', 0);
+    }
+
+    public function test_excluded_entries_are_shown_disabled_and_never_selectable(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create();
+
+        $test = Livewire::actingAs($superAdmin)
+            ->test(AllowedPaths::class)
+            ->assertOk();
+
+        // العناصر المستبعدة تلقائيًا تظهر للشفافية
+        $disabled = array_column($test->get('disabledEntries'), 'path');
+
+        $this->assertContains('storage', $disabled);
+        $this->assertContains('vendor', $disabled);
+        $this->assertContains('node_modules', $disabled);
+
+        // لا تظهر ضمن العناصر القابلة للاختيار
+        $enabled = array_column($test->get('entries'), 'path');
+        $this->assertNotContains('storage', $enabled);
+        $this->assertNotContains('vendor', $enabled);
+
+        // تحديد الكل لا يشمل العناصر المعطّلة أبدًا
+        $test->call('selectAll')
+            ->assertSet('selected', $enabled);
+
+        // حتى لو أُدخلت يدويًا، الحفظ يرفضها لأنها ليست من عناصر الجذر القابلة للاختيار
+        $test->set('selected', [...$enabled, 'storage', 'vendor'])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        // save() ترتّب النتيجة بـ sort() القياسي (حساس لحالة الأحرف)
+        sort($enabled);
+
+        $this->assertSame($enabled, DeploymentPaths::allowed());
     }
 }

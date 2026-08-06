@@ -83,7 +83,7 @@ class Index extends Component
     {
         return view('livewire.organization.index', [
             'currentLogoUrl' => $this->currentLogoPath && Storage::disk('public')->exists($this->currentLogoPath)
-                ? Storage::disk('public')->url($this->currentLogoPath)
+                ? asset('media/'.ltrim($this->currentLogoPath, '/'))
                 : null,
         ]);
     }

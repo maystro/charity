@@ -24,7 +24,7 @@
             <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">
                 قائمة الجذر
                 <span class="ms-2 text-sm font-normal text-[var(--color-text-muted)]">
-                    ({{ $this->selectedCount }} مُحدد — {{ count($this->entries) }} عنصر)
+                    ({{ $this->selectedCount }} مُحدد — {{ count($this->entries) + count($this->disabledEntries) }} عنصر)
                 </span>
             </h2>
 
@@ -48,16 +48,22 @@
 
         @php
             $visible = $this->entries;
+            $visibleDisabled = $this->disabledEntries;
+
             if ($search !== '') {
                 $needle = mb_strtolower($search);
                 $visible = array_values(array_filter(
                     $this->entries,
                     fn (array $entry): bool => str_contains(mb_strtolower($entry['path']), $needle)
                 ));
+                $visibleDisabled = array_values(array_filter(
+                    $this->disabledEntries,
+                    fn (array $entry): bool => str_contains(mb_strtolower($entry['path']), $needle)
+                ));
             }
         @endphp
 
-        @if ($visible === [])
+        @if ($visible === [] && $visibleDisabled === [])
             <x-ui.empty-state
                 icon="folder"
                 title="لا توجد نتائج"
@@ -94,6 +100,37 @@
                             </label>
                             <span class="shrink-0 font-mono text-[10px] text-[var(--color-text-muted)]/70" dir="ltr">
                                 {{ $entry['type'] === 'dir' ? 'مجلد (يشمل ما بداخله)' : 'ملف' }}
+                            </span>
+                        </li>
+                    @endforeach
+
+                    {{-- Always-excluded entries — shown for transparency, never selectable --}}
+                    @foreach ($visibleDisabled as $entry)
+                        <li
+                            wire:key="entry-disabled-{{ $entry['path'] }}"
+                            class="flex items-center gap-3 px-3 py-2 opacity-50"
+                            title="مستبعد تلقائيًا من النشر"
+                        >
+                            <input
+                                type="checkbox"
+                                disabled
+                                class="h-4 w-4 shrink-0 rounded border-[var(--color-border)] opacity-40"
+                            />
+                            <span class="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+                                <x-dynamic-component
+                                    :component="'heroicon-s-' . ($entry['type'] === 'dir' ? 'folder' : 'document-text')"
+                                    class="w-4 h-4"
+                                />
+                            </span>
+                            <span
+                                dir="ltr"
+                                class="truncate font-mono text-xs text-[var(--color-text-primary)]"
+                                title="{{ $entry['path'] }}"
+                            >
+                                {{ $entry['label'] }}
+                            </span>
+                            <span class="shrink-0 font-mono text-[10px] text-[var(--color-text-muted)]/70" dir="ltr">
+                                مستبعد تلقائيًا
                             </span>
                         </li>
                     @endforeach

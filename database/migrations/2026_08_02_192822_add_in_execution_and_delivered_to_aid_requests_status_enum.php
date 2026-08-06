@@ -14,13 +14,17 @@ return new class extends Migration
     {
         // SQLite does not support ALTER TABLE MODIFY COLUMN for enums.
         // We recreate the table with the updated status CHECK constraint.
-        DB::statement('PRAGMA foreign_keys=off');
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=off');
+        }
 
         Schema::table('aid_requests', function (Blueprint $table) {
             $table->string('status', 50)->change();
         });
 
-        DB::statement('PRAGMA foreign_keys=on');
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=on');
+        }
     }
 
     /**

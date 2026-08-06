@@ -61,7 +61,7 @@ class extends Component
     $organizationTagline = \App\Models\SystemSetting::get('organization_name', 'نظام إدارة منشأة خيرية');
     $organizationLogoPath = \App\Models\SystemSetting::get('organization_logo_path');
     $organizationLogoUrl = $organizationLogoPath && Storage::disk('public')->exists($organizationLogoPath)
-        ? Storage::disk('public')->url($organizationLogoPath)
+        ? asset('media/'.ltrim($organizationLogoPath, '/'))
         : null;
 @endphp
 

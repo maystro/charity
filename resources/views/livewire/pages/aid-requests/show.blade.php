@@ -3,7 +3,7 @@
     $printOrganizationTagline = (string) \App\Models\SystemSetting::get('organization_tagline', 'جمعية عهد الخير للتنمية والخدمات');
     $printLogoPath = \App\Models\SystemSetting::get('organization_logo_path');
     $printLogoUrl = $printLogoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($printLogoPath)
-        ? \Illuminate\Support\Facades\Storage::disk('public')->url($printLogoPath)
+        ? asset('media/'.ltrim($printLogoPath, '/'))
         : null;
 @endphp
 

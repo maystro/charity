@@ -4,10 +4,10 @@ namespace Tests\Feature\Deployments;
 
 use App\Livewire\Deployments\Maintenance;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Livewire\Livewire;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MaintenancePageTest extends TestCase
@@ -90,5 +90,53 @@ class MaintenancePageTest extends TestCase
             ->call('updatePackages')
             ->assertSet('isUpdatingPackages', false)
             ->assertDispatched('notify', type: 'success');
+    }
+
+    public function test_create_storage_link_creates_symlink_when_missing(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create();
+
+        $link = public_path('storage');
+
+        // تهيئة الحالة: الرابط غير موجود
+        if (is_link($link)) {
+            unlink($link);
+        }
+
+        try {
+            Livewire::actingAs($superAdmin)
+                ->test(Maintenance::class)
+                ->call('createStorageLink')
+                ->assertSet('isLinkingStorage', false)
+                ->assertSet('storageLinkExists', true)
+                ->assertSet('statusMessage', 'تم إنشاء رابط التخزين بنجاح: public/storage → storage/app/public.')
+                ->assertDispatched('notify', type: 'success');
+
+            $this->assertTrue(is_link($link));
+        } finally {
+            // إبقاء الرابط موجودًا لبيئة التطوير المحلية (وضع طبيعي)
+            if (! is_link($link)) {
+                @symlink(storage_path('app/public'), $link);
+            }
+        }
+    }
+
+    public function test_create_storage_link_reports_when_link_already_exists(): void
+    {
+        $superAdmin = User::factory()->superAdmin()->create();
+
+        $link = public_path('storage');
+
+        // تهيئة الحالة: الرابط موجود
+        if (! is_link($link)) {
+            symlink(storage_path('app/public'), $link);
+        }
+
+        Livewire::actingAs($superAdmin)
+            ->test(Maintenance::class)
+            ->call('createStorageLink')
+            ->assertSet('storageLinkExists', true)
+            ->assertSet('statusMessage', 'رابط التخزين موجود بالفعل: public/storage.')
+            ->assertDispatched('notify', type: 'info');
     }
 }

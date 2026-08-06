@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use RuntimeException;
 use Throwable;
 
 #[Layout('layouts.app', ['title' => 'الصيانة'])]
@@ -16,6 +17,10 @@ class Maintenance extends Component
 
     public bool $isUpdatingPackages = false;
 
+    public bool $isLinkingStorage = false;
+
+    public bool $storageLinkExists = false;
+
     public ?string $statusMessage = null;
 
     public ?string $errorMessage = null;
@@ -23,6 +28,8 @@ class Maintenance extends Component
     public function mount(): void
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        $this->storageLinkExists = is_link(public_path('storage'));
     }
 
     public function clearCaches(): void
@@ -46,6 +53,48 @@ class Maintenance extends Component
         }
     }
 
+    public function createStorageLink(): void
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        $this->isLinkingStorage = true;
+        $this->errorMessage = null;
+        $this->statusMessage = null;
+
+        try {
+            $link = public_path('storage');
+            $target = storage_path('app/public');
+
+            if (is_link($link)) {
+                $this->statusMessage = 'رابط التخزين موجود بالفعل: public/storage.';
+                $this->dispatch('notify', message: $this->statusMessage, type: 'info');
+            } else {
+                // لا نستخدم Artisan::call('storage:link') — فإصدار Laravel القديم
+                // على الاستضافة المشتركة يستدعي exec('ln -s ...') وهي معطّلة.
+                // دالة symlink() الأصلية لا تحتاج exec إطلاقًا.
+                if (! function_exists('symlink')) {
+                    throw new RuntimeException('دالة symlink غير متاحة على هذه الاستضافة — يمكنك تجاهل هذا الزر، فالملفات تُعرض تلقائيًا عبر مسار /media دون الحاجة للرابط.');
+                }
+
+                if (! @symlink($target, $link)) {
+                    $error = error_get_last();
+
+                    throw new RuntimeException('تعذر إنشاء الرابط الرمزي: '.($error['message'] ?? 'خطأ غير معروف — قد تمنع الاستضافة إنشاء الروابط الرمزية').' — يمكنك تجاهل هذا الزر، فالملفات تُعرض تلقائيًا عبر مسار /media دون الحاجة للرابط.');
+                }
+
+                $this->storageLinkExists = true;
+
+                $this->statusMessage = 'تم إنشاء رابط التخزين بنجاح: public/storage → storage/app/public.';
+                $this->dispatch('notify', message: 'تم إنشاء رابط التخزين بنجاح.', type: 'success');
+            }
+        } catch (Throwable $e) {
+            $this->errorMessage = $e->getMessage();
+            $this->dispatch('notify', message: $this->errorMessage, type: 'error');
+        } finally {
+            $this->isLinkingStorage = false;
+        }
+    }
+
     public function updatePackages(): void
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
@@ -60,7 +109,7 @@ class Maintenance extends Component
                 ->run('composer update --no-interaction --no-progress --prefer-dist');
 
             if (! $result->successful()) {
-                throw new \RuntimeException(trim($result->errorOutput()) !== '' ? trim($result->errorOutput()) : 'فشل تحديث الحزم.');
+                throw new RuntimeException(trim($result->errorOutput()) !== '' ? trim($result->errorOutput()) : 'فشل تحديث الحزم.');
             }
 
             $this->statusMessage = trim($result->output()) !== ''

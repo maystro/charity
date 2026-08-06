@@ -12,14 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('PRAGMA foreign_keys=off');
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=off');
+        }
 
         Schema::table('aid_request_status_histories', function (Blueprint $table) {
             $table->string('from_status', 50)->nullable()->change();
             $table->string('to_status', 50)->change();
         });
 
-        DB::statement('PRAGMA foreign_keys=on');
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=on');
+        }
     }
 
     /**
