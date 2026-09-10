@@ -65,7 +65,6 @@ class Navigation
                 'items' => [
                     ['label' => 'الإدارة التقنية', 'route' => 'deployments.index', 'icon' => 'server-stack', 'permission' => 'deployments.index', 'assignable' => false],
                     ['label' => 'النشر الذكي', 'route' => 'deployments.smart-deployment', 'icon' => 'sparkles', 'permission' => 'deployments.index', 'assignable' => false],
-                    ['label' => 'المسارات المسموحة', 'route' => 'deployments.allowed-paths', 'icon' => 'shield-check', 'permission' => 'deployments.index', 'assignable' => false],
                     ['label' => 'صيانة', 'route' => 'deployments.maintenance', 'icon' => 'wrench-screwdriver', 'permission' => 'deployments.index', 'assignable' => false],
                     ['label' => 'النسخ الاحتياطية', 'route' => 'backups.index', 'icon' => 'archive-box', 'permission' => 'backups.index', 'assignable' => false],
                 ],

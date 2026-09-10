@@ -9,7 +9,6 @@ use App\Livewire\Alerts\AlertsIndex;
 use App\Livewire\Backups\Index as BackupsIndex;
 use App\Livewire\Debug;
 use App\Livewire\Delivery\DeliveryIndex;
-use App\Livewire\Deployments\AllowedPaths as DeploymentsAllowedPaths;
 use App\Livewire\Deployments\CreateRelease as DeploymentsCreate;
 use App\Livewire\Deployments\FtpSettings as DeploymentsFtpSettings;
 use App\Livewire\Deployments\Index as DeploymentsIndex;
@@ -204,7 +203,6 @@ Route::middleware(['auth', EnsureRouteAccess::class])->group(function () {
     Route::middleware('super_admin')->prefix('superadmin-dashboard')->name('deployments.')->group(function () {
         Route::get('/', DeploymentsIndex::class)->name('index');
         Route::get('/create', DeploymentsCreate::class)->name('create');
-        Route::get('/allowed-paths', DeploymentsAllowedPaths::class)->name('allowed-paths');
         Route::get('/ftp-settings', DeploymentsFtpSettings::class)->name('ftp-settings');
         Route::get('/maintenance', DeploymentsMaintenance::class)->name('maintenance');
         Route::get('/smart-deployment', DeploymentsSmartDeployment::class)->name('smart-deployment');
