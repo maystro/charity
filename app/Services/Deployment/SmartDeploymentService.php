@@ -5,6 +5,7 @@ namespace App\Services\Deployment;
 use App\Models\SmartDeployment;
 use App\Models\User;
 use App\Support\Deployment\ProjectSnapshot;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -27,8 +28,7 @@ class SmartDeploymentService
 {
     public function __construct(
         protected ProjectSnapshot $snapshot,
-    ) {
-    }
+    ) {}
 
     /* ---------------------------------------------------------------------
      | Scanning
@@ -201,7 +201,8 @@ class SmartDeploymentService
     {
         try {
             $response = Http::asForm()
-                ->timeout(60)
+                ->connectTimeout(10)
+                ->timeout(45)
                 ->post($serverUrl, [
                     'action' => 'get_manifest',
                     'secret' => (string) config('deployment.smart.secret_key', ''),
@@ -377,7 +378,12 @@ class SmartDeploymentService
         try {
             $archiveContent = (string) file_get_contents($zipPath);
 
-            $response = Http::timeout(300)
+            // 45s total keeps the request under the web server's ~60s gateway
+            // timeout so the browser never renders a raw "gateway timeout"
+            // page. The 10s connect timeout fails fast when deployer.php is
+            // unreachable or the connection hangs.
+            $response = Http::connectTimeout(10)
+                ->timeout(45)
                 ->attach('archive', $archiveContent, 'deployment.zip')
                 ->post($serverUrl, [
                     'action' => 'deploy',
@@ -424,6 +430,10 @@ class SmartDeploymentService
             ];
         } catch (Throwable $e) {
             @unlink($zipPath);
+
+            if ($e instanceof ConnectionException || str_contains($e->getMessage(), 'Operation timed out')) {
+                throw new RuntimeException('انتهت مهلة الاتصال بالسيرفر — استغرق الخادم وقتًا أطول من المسموح. أعد المحاولة، أو تأكد من أن deployer.php يعمل وأن الخادم غير محمّل.', 0, $e);
+            }
 
             throw new RuntimeException('فشل النشر: '.$e->getMessage(), 0, $e);
         }
@@ -484,7 +494,7 @@ class SmartDeploymentService
      | --------------------------------------------------------------------- */
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, SmartDeployment>
+     * @return Collection<int, SmartDeployment>
      */
     public function getRecentDeployments(int $limit = 10)
     {
@@ -512,5 +522,4 @@ class SmartDeploymentService
             'manifest_files' => count($this->loadManifest()),
         ];
     }
-
 }

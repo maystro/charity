@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Deployments;
 
-use App\Livewire\Deployments\AllowedPaths;
+use App\Livewire\Deployments\SmartDeployment;
 use App\Models\DeploymentAllowedPath;
 use App\Models\User;
 use App\Support\Deployment\DeploymentPaths;
@@ -20,13 +20,13 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         $test = Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
+            ->test(SmartDeployment::class)
             ->assertOk();
 
         // مسارات config الافتراضية تُرفع إلى جذورها (composer.json ضمن القائمة)
-        $test->assertSet('selected', ['app', 'composer.json', 'config', 'database', 'lang', 'resources', 'routes']);
+        $test->assertSet('allowedSelected', ['app', 'composer.json', 'config', 'database', 'lang', 'resources', 'routes']);
 
-        $paths = array_column($test->get('entries'), 'path');
+        $paths = array_column($test->get('allowedEntries'), 'path');
 
         // عناصر الجذر فقط — لا مسارات داخلية
         $this->assertContains('app', $paths);
@@ -50,8 +50,8 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
-            ->assertSet('selected', ['composer.json', 'database']);
+            ->test(SmartDeployment::class)
+            ->assertSet('allowedSelected', ['composer.json', 'database']);
     }
 
     public function test_non_super_admin_is_forbidden(): void
@@ -59,7 +59,7 @@ class DeploymentAllowedPathsTest extends TestCase
         $user = User::factory()->create();
 
         Livewire::actingAs($user)
-            ->test(AllowedPaths::class)
+            ->test(SmartDeployment::class)
             ->assertForbidden();
     }
 
@@ -68,9 +68,9 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
-            ->set('selected', ['app', 'config', 'composer.json'])
-            ->call('save')
+            ->test(SmartDeployment::class)
+            ->set('allowedSelected', ['app', 'config', 'composer.json'])
+            ->call('saveAllowedPaths')
             ->assertHasNoErrors()
             ->assertDispatched('notify');
 
@@ -92,9 +92,9 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
-            ->set('selected', ['app', 'non/existent/path.php', '../outside.php'])
-            ->call('save')
+            ->test(SmartDeployment::class)
+            ->set('allowedSelected', ['app', 'non/existent/path.php', '../outside.php'])
+            ->call('saveAllowedPaths')
             ->assertHasNoErrors();
 
         $this->assertSame(['app'], DeploymentPaths::allowed());
@@ -105,9 +105,9 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
-            ->set('selected', ['app', 'app/Models/User.php', 'routes', 'routes/web.php'])
-            ->call('save');
+            ->test(SmartDeployment::class)
+            ->set('allowedSelected', ['app', 'app/Models/User.php', 'routes', 'routes/web.php'])
+            ->call('saveAllowedPaths');
 
         // المسارات الداخلية ليست من عناصر الجذر فتُرفض، واختيار المجلد يغطي ما بداخله
         $this->assertSame(['app', 'routes'], DeploymentPaths::allowed());
@@ -128,28 +128,28 @@ class DeploymentAllowedPathsTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
 
         $test = Livewire::actingAs($superAdmin)
-            ->test(AllowedPaths::class)
+            ->test(SmartDeployment::class)
             ->assertOk();
 
         // العناصر المستبعدة تلقائيًا تظهر للشفافية
-        $disabled = array_column($test->get('disabledEntries'), 'path');
+        $disabled = array_column($test->get('allowedDisabledEntries'), 'path');
 
         $this->assertContains('storage', $disabled);
         $this->assertContains('vendor', $disabled);
         $this->assertContains('node_modules', $disabled);
 
         // لا تظهر ضمن العناصر القابلة للاختيار
-        $enabled = array_column($test->get('entries'), 'path');
+        $enabled = array_column($test->get('allowedEntries'), 'path');
         $this->assertNotContains('storage', $enabled);
         $this->assertNotContains('vendor', $enabled);
 
         // تحديد الكل لا يشمل العناصر المعطّلة أبدًا
-        $test->call('selectAll')
-            ->assertSet('selected', $enabled);
+        $test->call('selectAllPaths')
+            ->assertSet('allowedSelected', $enabled);
 
         // حتى لو أُدخلت يدويًا، الحفظ يرفضها لأنها ليست من عناصر الجذر القابلة للاختيار
-        $test->set('selected', [...$enabled, 'storage', 'vendor'])
-            ->call('save')
+        $test->set('allowedSelected', [...$enabled, 'storage', 'vendor'])
+            ->call('saveAllowedPaths')
             ->assertHasNoErrors();
 
         // save() ترتّب النتيجة بـ sort() القياسي (حساس لحالة الأحرف)
