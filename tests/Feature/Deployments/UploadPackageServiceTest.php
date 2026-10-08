@@ -45,7 +45,7 @@ class UploadPackageServiceTest extends TestCase
 
         $this->createdFiles[] = $result['path'];
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         $this->assertTrue($zip->open($result['path']));
         $this->assertNotFalse($zip->locateName('composer.json'));
         $this->assertNotFalse($zip->locateName('config/deployment.php'));

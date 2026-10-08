@@ -25,9 +25,13 @@
     if ($error) $inputClasses .= ' border-[var(--color-danger-500)] focus:ring-[var(--color-danger-500)]/15 focus:border-[var(--color-danger-500)]';
     else $inputClasses .= ' border-[var(--color-border)]';
     
-    // In RTL / Arabic, the start padding should be right (ps) and end padding should be left (pe)
-    if ($icon || $prefix) $inputClasses .= ' ps-10';
-    if ($suffix) $inputClasses .= ' pe-10';
+    // Logical padding follows document direction (dir on <html>), not app locale.
+    if ($icon || $prefix) {
+        $inputClasses .= ' ps-10';
+    }
+    if ($suffix) {
+        $inputClasses .= ' pe-10';
+    }
     $inputClasses .= ' ' . $attributes->get('class', '');
 @endphp
 
@@ -43,7 +47,7 @@
 
     <div class="relative">
         @if($icon || $prefix)
-            <div class="absolute inset-y-0 {{ app()->isLocale('ar') ? 'right' : 'left' }}-0 flex items-center {{ $icon ? 'px-3.5' : 'ps-3.5' }} pointer-events-none text-[var(--color-text-muted)]">
+            <div class="absolute inset-y-0 start-0 flex items-center {{ $icon ? 'px-3.5' : 'ps-3.5' }} pointer-events-none text-[var(--color-text-muted)]">
                 @if($icon)
                     <span class="w-4 h-4 flex items-center justify-center text-current">
                         <x-dynamic-component :component="'heroicon-s-' . $icon" class="w-4 h-4 text-current" />
@@ -56,7 +60,7 @@
         @endif
 
         @if($suffix)
-            <div class="absolute inset-y-0 {{ app()->isLocale('ar') ? 'left' : 'right' }}-0 flex items-center pe-3.5 pointer-events-none text-[var(--color-text-muted)]">
+            <div class="absolute inset-y-0 end-0 flex items-center pe-3.5 pointer-events-none text-[var(--color-text-muted)]">
                 <span class="text-sm font-medium">{{ $suffix }}</span>
             </div>
         @endif

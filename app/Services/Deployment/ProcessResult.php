@@ -11,6 +11,5 @@ class ProcessResult
         public readonly bool $successful,
         public readonly string $output,
         public readonly ?int $exitCode,
-    ) {
-    }
+    ) {}
 }

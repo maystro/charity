@@ -18,8 +18,7 @@ class DeploymentProcessRunner
 {
     public function __construct(
         protected DeploymentPathGuard $guard,
-    ) {
-    }
+    ) {}
 
     /**
      * Run a whitelisted command key, optionally scoped to a validated path.

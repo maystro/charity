@@ -5,6 +5,7 @@ namespace Tests\Feature\Deployments;
 use App\Livewire\Deployments\FtpSettings;
 use App\Models\DeploymentSetting;
 use App\Models\User;
+use App\Services\Deployment\DeploymentFtpSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -29,8 +30,8 @@ class DeploymentFtpSettingsTest extends TestCase
             ->assertDispatched('notify');
 
         $this->assertDatabaseHas('deployment_settings', ['key' => 'ftp_host']);
-        $this->assertSame('ftp.example.com', app(\App\Services\Deployment\DeploymentFtpSettings::class)->get('ftp_host'));
-        $this->assertSame('deploy_user', app(\App\Services\Deployment\DeploymentFtpSettings::class)->get('ftp_username'));
+        $this->assertSame('ftp.example.com', app(DeploymentFtpSettings::class)->get('ftp_host'));
+        $this->assertSame('deploy_user', app(DeploymentFtpSettings::class)->get('ftp_username'));
 
         // كلمة المرور مخزنة مشفّرة — النص الصريح لا يظهر في قاعدة البيانات
         $row = DeploymentSetting::query()->where('key', 'ftp_password')->first();
@@ -41,7 +42,7 @@ class DeploymentFtpSettingsTest extends TestCase
 
     public function test_saving_empty_password_keeps_saved_one(): void
     {
-        app(\App\Services\Deployment\DeploymentFtpSettings::class)->set('ftp_password', 'original-pass');
+        app(DeploymentFtpSettings::class)->set('ftp_password', 'original-pass');
 
         $superAdmin = User::factory()->superAdmin()->create();
 
@@ -55,7 +56,7 @@ class DeploymentFtpSettingsTest extends TestCase
 
         $this->assertSame(
             'original-pass',
-            app(\App\Services\Deployment\DeploymentFtpSettings::class)->get('ftp_password')
+            app(DeploymentFtpSettings::class)->get('ftp_password')
         );
     }
 

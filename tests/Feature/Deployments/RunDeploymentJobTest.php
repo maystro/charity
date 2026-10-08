@@ -10,6 +10,8 @@ use App\Models\Deployment;
 use App\Models\Release;
 use App\Models\User;
 use App\Services\Deployment\DeploymentProcessRunner;
+use App\Services\Deployment\DeploymentService;
+use App\Services\Deployment\FtpClientContract;
 use App\Services\Deployment\FtpUploader;
 use App\Services\Deployment\ProcessResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,9 +31,7 @@ class FakeDeploymentProcessRunner extends DeploymentProcessRunner
     /** @var array<string, ProcessResult> */
     public array $results = [];
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function run(string $commandKey, ?string $path = null, int $timeout = 120): ProcessResult
     {
@@ -52,11 +52,9 @@ class FakeFtpUploader extends FtpUploader
 
     public bool $fail = false;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
-    public function result(\App\Models\Release $release, ?\App\Services\Deployment\FtpClientContract $client = null): ProcessResult
+    public function result(Release $release, ?FtpClientContract $client = null): ProcessResult
     {
         $this->calls[] = $release->id;
 
@@ -84,7 +82,7 @@ class RunDeploymentJobTest extends TestCase
 
     private function runner(): FakeDeploymentProcessRunner
     {
-        $runner = new FakeDeploymentProcessRunner();
+        $runner = new FakeDeploymentProcessRunner;
         $this->app->instance(DeploymentProcessRunner::class, $runner);
 
         return $runner;
@@ -92,7 +90,7 @@ class RunDeploymentJobTest extends TestCase
 
     private function uploader(bool $fail = false): FakeFtpUploader
     {
-        $uploader = new FakeFtpUploader();
+        $uploader = new FakeFtpUploader;
         $uploader->fail = $fail;
         $this->app->instance(FtpUploader::class, $uploader);
 
@@ -230,7 +228,7 @@ class RunDeploymentJobTest extends TestCase
         $superAdmin = User::factory()->superAdmin()->create();
         $release = Release::factory()->published()->create(['created_by' => $superAdmin->id]);
 
-        app(\App\Services\Deployment\DeploymentService::class)
+        app(DeploymentService::class)
             ->queue($release, DeploymentEnvironment::Testing, $superAdmin);
 
         Bus::assertDispatched(RunDeploymentJob::class);

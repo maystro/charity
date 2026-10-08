@@ -2,6 +2,7 @@
 
 namespace App\Services\Deployment;
 
+use FTP\Connection;
 use RuntimeException;
 
 /**
@@ -12,7 +13,7 @@ use RuntimeException;
  */
 class FtpClient implements FtpClientContract
 {
-    /** @var resource|\FTP\Connection|null */
+    /** @var resource|Connection|null */
     protected $connection = null;
 
     /**
@@ -22,8 +23,7 @@ class FtpClient implements FtpClientContract
         protected array $credentials,
         protected bool $passive = true,
         protected int $timeout = 90,
-    ) {
-    }
+    ) {}
 
     public function connect(): void
     {
@@ -200,7 +200,7 @@ class FtpClient implements FtpClientContract
         return $root.'/'.ltrim($remotePath, '/');
     }
 
-    /** @return resource|\FTP\Connection */
+    /** @return resource|Connection */
     protected function assertConnected()
     {
         if (! $this->isActiveConnection()) {
@@ -215,7 +215,7 @@ class FtpClient implements FtpClientContract
      */
     protected function isActiveConnection(): bool
     {
-        return is_resource($this->connection) || $this->connection instanceof \FTP\Connection;
+        return is_resource($this->connection) || $this->connection instanceof Connection;
     }
 
     /**

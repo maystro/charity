@@ -22,8 +22,7 @@ class SmartDeploymentJob implements ShouldQueue
     public function __construct(
         public SmartDeployment $record,
         public array $changes,
-    ) {
-    }
+    ) {}
 
     public function handle(SmartDeploymentService $service): void
     {

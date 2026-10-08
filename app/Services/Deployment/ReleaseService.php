@@ -40,7 +40,7 @@ class ReleaseService
             // Record a snapshot of the project at this point so the next
             // release can auto-detect what changed since.
             $release->forceFill([
-                'file_snapshot' => (new ProjectSnapshot())->scan(),
+                'file_snapshot' => (new ProjectSnapshot)->scan(),
             ])->save();
 
             return $release->load('changes', 'creator');
@@ -66,7 +66,7 @@ class ReleaseService
             ->orderByDesc('id')
             ->first();
 
-        $snapshot = new ProjectSnapshot();
+        $snapshot = new ProjectSnapshot;
 
         if ($previous !== null) {
             return $snapshot->changesSince(

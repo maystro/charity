@@ -49,7 +49,7 @@ class UploadPackageService
 
         $path = $directory.DIRECTORY_SEPARATOR.$filename;
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException('تعذر إنشاء ملف الحزمة.');
@@ -64,6 +64,7 @@ class UploadPackageService
 
             if ($change->type->value === 'removed') {
                 $removed[] = $relative;
+
                 continue;
             }
 
@@ -71,6 +72,7 @@ class UploadPackageService
 
             if ($absolute === null) {
                 $missing[] = $relative;
+
                 continue;
             }
 
