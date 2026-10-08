@@ -44,7 +44,7 @@ class ProjectSnapshotTest extends TestCase
 
     public function test_scan_builds_hash_snapshot_and_excludes_directories(): void
     {
-        $snapshot = (new ProjectSnapshot())->scan($this->root, ['vendor', 'storage'], ['app', 'README.md']);
+        $snapshot = (new ProjectSnapshot)->scan($this->root, ['vendor', 'storage'], ['app', 'README.md']);
 
         $this->assertArrayHasKey('app/User.php', $snapshot);
         $this->assertArrayHasKey('app/Service.php', $snapshot);
@@ -56,7 +56,7 @@ class ProjectSnapshotTest extends TestCase
 
     public function test_scan_only_includes_files_under_allowed_paths(): void
     {
-        $snapshot = (new ProjectSnapshot())->scan($this->root, [], ['app']);
+        $snapshot = (new ProjectSnapshot)->scan($this->root, [], ['app']);
 
         $this->assertArrayHasKey('app/User.php', $snapshot);
         $this->assertArrayHasKey('app/Service.php', $snapshot);
@@ -80,7 +80,7 @@ class ProjectSnapshotTest extends TestCase
             'c.txt' => 'brand-new',
         ];
 
-        $changes = (new ProjectSnapshot())->changesSince($previous, $current);
+        $changes = (new ProjectSnapshot)->changesSince($previous, $current);
 
         $byPath = collect($changes)->keyBy('file_path');
 
@@ -95,7 +95,7 @@ class ProjectSnapshotTest extends TestCase
         $previous = ['z.php' => 'a'];
         $current = ['a.php' => 'new', 'z.php' => 'a', 'm.php' => 'new'];
 
-        $changes = (new ProjectSnapshot())->changesSince($previous, $current);
+        $changes = (new ProjectSnapshot)->changesSince($previous, $current);
 
         $paths = array_column($changes, 'file_path');
 
@@ -108,9 +108,9 @@ class ProjectSnapshotTest extends TestCase
         touch($this->root.'/app/Service.php', time()); // الآن
         touch($this->root.'/README.md', time() - (86400 * 3)); // منذ 3 أيام
 
-        $since = (new \DateTimeImmutable())->modify('-2 days');
+        $since = (new \DateTimeImmutable)->modify('-2 days');
 
-        $changes = (new ProjectSnapshot())->changesByMtimeSince($since, 'added', $this->root, ['app', 'README.md']);
+        $changes = (new ProjectSnapshot)->changesByMtimeSince($since, 'added', $this->root, ['app', 'README.md']);
 
         $paths = array_column($changes, 'file_path');
 
@@ -128,7 +128,7 @@ class ProjectSnapshotTest extends TestCase
         file_put_contents($this->root.'/.github/workflows/deploy.yml', 'on: push');
         file_put_contents($this->root.'/.gitignore', 'ignored');
 
-        $snapshot = (new ProjectSnapshot())->scan($this->root, [], ['app']);
+        $snapshot = (new ProjectSnapshot)->scan($this->root, [], ['app']);
 
         $this->assertArrayNotHasKey('.agents/skills/SKILL.md', $snapshot);
         $this->assertArrayNotHasKey('.github/workflows/deploy.yml', $snapshot);
@@ -145,7 +145,7 @@ class ProjectSnapshotTest extends TestCase
             'README.md' => 'd',
         ];
 
-        $filtered = (new ProjectSnapshot())->allowedOnly($snapshot, ['app', 'routes']);
+        $filtered = (new ProjectSnapshot)->allowedOnly($snapshot, ['app', 'routes']);
 
         $this->assertArrayHasKey('app/User.php', $filtered);
         $this->assertArrayHasKey('routes/web.php', $filtered);

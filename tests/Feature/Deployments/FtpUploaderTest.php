@@ -114,9 +114,7 @@ class FakeFtpClient implements FtpClientContract
         $this->clearedDirs[] = $remoteDir;
     }
 
-    public function disconnect(): void
-    {
-    }
+    public function disconnect(): void {}
 }
 
 class FtpUploaderTest extends TestCase
@@ -175,7 +173,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
 
@@ -198,7 +196,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
 
@@ -218,7 +216,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
 
@@ -240,7 +238,7 @@ class FtpUploaderTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('إعدادات FTP غير مكتملة');
 
-        app(FtpUploader::class)->upload($release, new FakeFtpClient());
+        app(FtpUploader::class)->upload($release, new FakeFtpClient);
     }
 
     public function test_connection_failure_produces_failed_process_result(): void
@@ -254,7 +252,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
         $client->failConnect = true;
 
         $result = app(FtpUploader::class)->result($release, $client);
@@ -276,7 +274,7 @@ class FtpUploaderTest extends TestCase
 
         $this->settings();
 
-        $result = app(FtpUploader::class)->result($release, new FakeFtpClient());
+        $result = app(FtpUploader::class)->result($release, new FakeFtpClient);
 
         $this->assertTrue($result->successful);
         $this->assertSame(0, $result->exitCode);
@@ -294,7 +292,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
 
@@ -315,7 +313,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
         $client->uploadFailuresLeft = 1;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
@@ -337,7 +335,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
         $client->uploadFailuresLeft = 5;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
@@ -359,7 +357,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
         $client->cacheFiles = [
             'bootstrap/cache' => ['config.php', 'routes-v7.php'],
             'storage/framework/views' => ['abc123.php', 'def456.php'],
@@ -387,7 +385,7 @@ class FtpUploaderTest extends TestCase
         ]);
 
         $this->settings();
-        $client = new FakeFtpClient();
+        $client = new FakeFtpClient;
 
         $stats = app(FtpUploader::class)->upload($release, $client);
 

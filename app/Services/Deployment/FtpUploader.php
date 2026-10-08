@@ -3,6 +3,9 @@
 namespace App\Services\Deployment;
 
 use App\Models\Release;
+use App\Models\ReleaseChange;
+use App\Support\Deployment\DeploymentPaths;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 /**
@@ -26,8 +29,7 @@ class FtpUploader
 
     public function __construct(
         protected DeploymentFtpSettings $settings,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{uploaded: int, removed: int, cleared: int, failed: array<int, string>}
@@ -111,7 +113,7 @@ class FtpUploader
      * Ensure every directory referenced by added/modified files exists on the
      * server. One round-trip per unique directory instead of per file.
      *
-     * @param  \Illuminate\Support\Collection<int, \App\Models\ReleaseChange>  $changes
+     * @param  Collection<int, ReleaseChange>  $changes
      */
     protected function ensureDirectories($changes, FtpClientContract $client): void
     {
@@ -238,7 +240,7 @@ class FtpUploader
             return null;
         }
 
-        $allowed = \App\Support\Deployment\DeploymentPaths::allowed();
+        $allowed = DeploymentPaths::allowed();
 
         if ($allowed !== []) {
             $allowedPrefixes = array_map(

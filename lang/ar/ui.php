@@ -20,7 +20,7 @@ return [
     'font_size' => 'حجم الخط',
     'ui_density' => 'كثافة الواجهة',
     'reduced_motion' => 'تقليل الحركة',
-    'sidebar_collapsed' => 'قائمة جانبية مطوية',
+    'sidebar_collapsed' => 'طي القائمة الجانبية',
     'density' => [
         'compact' => 'مضغوط',
         'comfortable' => 'مريح',

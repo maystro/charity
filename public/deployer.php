@@ -159,7 +159,7 @@ function clear_caches(string $root): void
 
 function extract_archive(string $root, string $archivePath): void
 {
-    $zip = new ZipArchive();
+    $zip = new ZipArchive;
 
     if ($zip->open($archivePath) !== true) {
         send_json(['success' => false, 'error' => 'تعذر فتح الأرشيف.'], 400);
@@ -197,6 +197,7 @@ function extract_archive(string $root, string $archivePath): void
 
             if ($fp === false) {
                 fclose($stream);
+
                 continue;
             }
 

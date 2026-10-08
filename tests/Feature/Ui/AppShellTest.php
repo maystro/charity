@@ -52,6 +52,9 @@ class AppShellTest extends TestCase
         $this->actingAs($user);
 
         Volt::test('user-preferences')
+            ->assertSee('تفضيلات الواجهة')
+            ->assertSee('لون التمييز')
+            ->assertDontSee('ui.interface_preferences')
             ->set('accentColor', 'emerald')
             ->set('fontSize', 'large')
             ->set('uiDensity', 'spacious')

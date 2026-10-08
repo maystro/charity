@@ -37,7 +37,7 @@ class ReleaseSnapshotImportTest extends TestCase
     {
         $superAdmin = User::factory()->superAdmin()->create();
 
-        $scan = (new ProjectSnapshot())->scan();
+        $scan = (new ProjectSnapshot)->scan();
         $this->assertNotEmpty($scan);
         $this->assertArrayHasKey('routes/web.php', $scan);
         $this->assertArrayHasKey('config/app.php', $scan);
@@ -98,7 +98,7 @@ class ReleaseSnapshotImportTest extends TestCase
     {
         $superAdmin = User::factory()->superAdmin()->create();
 
-        $scan = (new ProjectSnapshot())->scan();
+        $scan = (new ProjectSnapshot)->scan();
         $previousScan = $scan;
         unset($previousScan['routes/web.php']); // سيُكتشف كمضاف
         $previousScan['config/app.php'] = 'changed-hash'; // سيُكتشف كمعدّل

@@ -4,7 +4,6 @@ namespace App\Livewire\Deployments;
 
 use App\Services\Deployment\DeploymentFtpSettings;
 use App\Services\Deployment\FtpClient;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
