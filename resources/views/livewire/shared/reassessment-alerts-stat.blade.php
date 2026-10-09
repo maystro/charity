@@ -16,7 +16,6 @@
 @endphp
 
 <div
-    wire:poll.30s.visible
     x-data="{ open: false }"
     @click.outside="open = false"
     @keydown.escape.window="open = false"
@@ -105,7 +104,7 @@
                 @foreach($this->topDueFamilies as $family)
                     @php
                         $approvedAt = $family->currentAssessment?->approved_at;
-                        $dueAt = $approvedAt?->copy()->addMonths((int) \App\Models\SystemSetting::get('reassessment_interval_months', 3));
+                        $dueAt = $approvedAt?->copy()->addMonths($this->reassessmentIntervalMonths);
                         $isOverdue = $dueAt?->isPast();
                     @endphp
                     <li>

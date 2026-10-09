@@ -25,10 +25,14 @@ class ShowAidRequest extends Component
     public function mount(AidRequest $aidRequest): void
     {
         $this->authorize('view', $aidRequest);
-        $this->aidRequest = $aidRequest;
+        $this->aidRequest = $aidRequest->load([
+            'family',
+            'attachments',
+            'items' => fn ($query) => $query->orderBy('sort_order'),
+        ]);
 
         // Pre-select currently-approved items so the review panel reflects the saved state.
-        $this->approvedItemIds = $aidRequest->items()
+        $this->approvedItemIds = $this->aidRequest->items
             ->where('approved', true)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
@@ -50,12 +54,13 @@ class ShowAidRequest extends Component
     public function visibleItems()
     {
         $user = Auth::user();
+        $items = $this->aidRequest->items->sortBy('sort_order')->values();
 
         if ($user && $user->isFieldworker()) {
-            return $this->aidRequest->items()->where('approved', true)->orderBy('sort_order')->get();
+            return $items->where('approved', true)->values();
         }
 
-        return $this->aidRequest->items()->orderBy('sort_order')->get();
+        return $items;
     }
 
     /**

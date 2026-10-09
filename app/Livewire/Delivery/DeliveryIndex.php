@@ -4,6 +4,7 @@ namespace App\Livewire\Delivery;
 
 use App\Enums\AidRequestStatus;
 use App\Models\AidRequest;
+use App\Services\AidRequests\AidRequestStatusCounts;
 use App\Services\AidRequests\DeliveryService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -83,7 +84,19 @@ class DeliveryIndex extends Component
         };
 
         $query = AidRequest::query()
-            ->with(['family', 'items' => fn ($q) => $q->orderBy('sort_order')])
+            ->with([
+                'family',
+                'items' => fn ($q) => $q->orderBy('sort_order')->select([
+                    'id',
+                    'aid_request_id',
+                    'title',
+                    'quantity',
+                    'delivered',
+                    'approved',
+                    'sort_order',
+                ]),
+            ])
+            ->withCount('items')
             ->whereIn('status', $statuses);
 
         // المتأخرات: طلبات قيد التنفيذ وتجاوزت تاريخ needed_by
@@ -129,37 +142,45 @@ class DeliveryIndex extends Component
             ->find($this->activeRequestId);
     }
 
+    /**
+     * Tab badge counts (single grouped query plus overdue).
+     *
+     * @return array{ready: int, in_execution: int, pending_review: int, delivered: int, overdue: int}
+     */
+    #[Computed]
+    public function tabCounts(): array
+    {
+        return app(AidRequestStatusCounts::class)->deliveryTabCounts();
+    }
+
     #[Computed]
     public function readyCount(): int
     {
-        return AidRequest::whereIn('status', AidRequestStatus::approvedStatuses())->count();
+        return $this->tabCounts['ready'];
     }
 
     #[Computed]
     public function inExecutionCount(): int
     {
-        return AidRequest::where('status', AidRequestStatus::InExecution->value)->count();
+        return $this->tabCounts['in_execution'];
     }
 
     #[Computed]
     public function pendingReviewCount(): int
     {
-        return AidRequest::where('status', AidRequestStatus::PendingDeliveryReview->value)->count();
+        return $this->tabCounts['pending_review'];
     }
 
     #[Computed]
     public function deliveredCount(): int
     {
-        return AidRequest::where('status', AidRequestStatus::Delivered->value)->count();
+        return $this->tabCounts['delivered'];
     }
 
     #[Computed]
     public function overdueCount(): int
     {
-        return AidRequest::where('status', AidRequestStatus::InExecution->value)
-            ->whereNotNull('needed_by')
-            ->where('needed_by', '<', now()->toDateString())
-            ->count();
+        return $this->tabCounts['overdue'];
     }
 
     // ─── Actions ──────────────────────────────────────────────────────────────

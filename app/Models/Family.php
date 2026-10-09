@@ -159,7 +159,11 @@ class Family extends Model
      */
     public function getAidsAttribute(): array
     {
-        return $this->aids()->get()->keyBy('aid_type')->map(fn ($aid) => [
+        $aids = $this->relationLoaded('aids')
+            ? $this->getRelation('aids')
+            : $this->aids()->get();
+
+        return $aids->keyBy('aid_type')->map(fn ($aid) => [
             'eligible' => $aid->eligible,
             'reasons' => $aid->reasons,
         ])->toArray();

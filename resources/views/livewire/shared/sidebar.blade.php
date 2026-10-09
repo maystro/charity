@@ -2,7 +2,9 @@
 
 use App\Models\SystemSetting;
 use App\Support\Navigation;
+use App\Support\SidebarBadgeCounts;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
@@ -19,6 +21,15 @@ class extends Component
     public function navGroups(): array
     {
         return Navigation::groups();
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function badgeCounts(): array
+    {
+        return app(SidebarBadgeCounts::class)->all();
     }
 
     /**
@@ -66,6 +77,17 @@ class extends Component
         $this->isMobileOpen = false;
     }
 
+    #[On('user-profile-updated')]
+    public function refreshProfile(): void
+    {
+        //
+    }
+
+    #[On('topbar-stats-cache-cleared')]
+    public function onTopBarCacheCleared(): void
+    {
+        unset($this->badgeCounts);
+    }
 
     public function mount(): void
     {
@@ -321,14 +343,7 @@ class extends Component
                         @endunless
                         @if(!empty($item['badge']))
                             @php
-                                $badgeCount = match ($item['badge']) {
-                                    'families_pending' => \App\Models\Family::whereIn('status', ['under_review', 'draft', 'needs_completion'])->count(),
-                                    'reassessment_overdue' => \App\Models\Alert::active()->forType(\App\Models\Alert::TYPE_REASSESSMENT_OVERDUE)->count(),
-                                    'aid_requests_pending' => \App\Models\AidRequest::whereIn('status', ['submitted', 'under_review'])->count(),
-                                    'visits_overdue' => \App\Models\Visit::where('is_overdue', true)->whereIn('status', \App\Enums\VisitStatus::pendingStatuses())->count(),
-                                    'projects_active' => \App\Models\Project::where('status', 'active')->count(),
-                                    default => 0,
-                                };
+                                $badgeCount = $this->badgeCounts[$item['badge']] ?? 0;
                                 $badgeColor = match ($item['badge']) {
                                     'families_pending' => 'var(--color-warning-500)',
                                     'reassessment_overdue' => 'var(--color-danger-500)',
@@ -353,9 +368,21 @@ class extends Component
 
     <div class="border-t p-3" style="border-color: var(--color-border);">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background: var(--accent-500);">
-                {{ substr(auth()->user()->name ?? 'م', 0, 1) }}
-            </div>
+            @php
+                $sidebarUser = auth()->user();
+                $sidebarPhoto = $sidebarUser?->photo;
+            @endphp
+            @if($sidebarPhoto)
+                <img
+                    src="{{ asset('media/'.ltrim($sidebarPhoto, '/')) }}"
+                    alt="{{ $sidebarUser?->name }}"
+                    class="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-[var(--color-border)]"
+                />
+            @else
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background: var(--accent-500);">
+                    {{ mb_substr($sidebarUser?->name ?? 'م', 0, 1) }}
+                </div>
+            @endif
             @unless($isCollapsed)
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium truncate" style="color: var(--color-text-primary);">{{ auth()->user()->name ?? '' }}</p>
@@ -380,18 +407,18 @@ class extends Component
                         class="absolute bottom-full left-0 mb-2 w-52 rounded-xl shadow-xl border p-1.5 z-50 bg-white/95 backdrop-blur-md"
                         style="border-color: var(--color-border);"
                     >
-                        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-black/5 transition-colors" style="color: var(--color-text-secondary);">
+                        <button type="button" @click="open = false; $dispatch('open-modal', 'profile')" class="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-black/5 transition-colors text-right" style="color: var(--color-text-secondary);">
                             <x-heroicon-o-user class="w-4.5 h-4.5 text-[var(--accent-500)]" />
                             <span>الملف الشخصي</span>
-                        </a>
+                        </button>
                         <button type="button" x-data @click="$dispatch('open-modal', 'user-preferences')" class="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-black/5 transition-colors text-right" style="color: var(--color-text-secondary);">
                             <x-heroicon-o-adjustments-horizontal class="w-4.5 h-4.5 text-[var(--accent-500)]" />
                             <span>تفضيلات الواجهة</span>
                         </button>
-                        <a href="#" class="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-black/5 transition-colors" style="color: var(--color-text-secondary);">
+                        <button type="button" @click="open = false; $dispatch('open-modal', 'change-password')" class="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-black/5 transition-colors text-right" style="color: var(--color-text-secondary);">
                             <x-heroicon-o-key class="w-4.5 h-4.5 text-[var(--accent-500)]" />
                             <span>تغيير كلمة المرور</span>
-                        </a>
+                        </button>
                         <hr class="my-1.5" style="border-color: var(--color-border);" />
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

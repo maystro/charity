@@ -14,15 +14,19 @@ class SettingsIndex extends Component
     // Families settings
     public int $reassessmentIntervalMonths = 3;
 
+    public int $executionReminderLeadDays = 3;
+
     public function mount(): void
     {
         $this->reassessmentIntervalMonths = (int) SystemSetting::get('reassessment_interval_months', 3);
+        $this->executionReminderLeadDays = (int) SystemSetting::get('execution_reminder_lead_days', 3);
     }
 
     public function save(): void
     {
         $this->validate([
             'reassessmentIntervalMonths' => 'required|integer|min:1|max:24',
+            'executionReminderLeadDays' => 'required|integer|min:0|max:30',
         ]);
 
         SystemSetting::set(
@@ -31,7 +35,16 @@ class SettingsIndex extends Component
             'families',
             'فترة إعادة التقييم (شهور)',
             'integer',
-            'عدد الشهور بعد которых يجب إعادة تقييم الأسرة'
+            'عدد الشهور بعد которها يجب إعادة تقييم الأسرة'
+        );
+
+        SystemSetting::set(
+            'execution_reminder_lead_days',
+            $this->executionReminderLeadDays,
+            'aid_requests',
+            'تنبيه موعد التنفيذ (أيام)',
+            'integer',
+            'عدد الأيام قبل موعد تنفيذ المساعدة لبدء التنبيه حتى يوم الموعد'
         );
 
         $this->dispatch('notify', message: 'تم حفظ الإعدادات بنجاح.', type: 'success');

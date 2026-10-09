@@ -2,8 +2,14 @@
 
 namespace Tests\Feature\Ui;
 
+use App\Livewire\Shared\UpcomingExecutionStat;
+use App\Models\AidRequest;
+use App\Models\AidRequestItem;
+use App\Models\Family;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
 
@@ -43,6 +49,43 @@ class AppShellTest extends TestCase
             ->assertSee('التنفيذ والمتابعة')
             ->assertDontSee('حالات تحت المراجعة')
             ->assertDontSee('الزيارات والمتابعة');
+    }
+
+    public function test_upcoming_execution_stat_shows_count_and_links_to_request_show(): void
+    {
+        Carbon::setTestNow('2026-10-13');
+
+        $admin = User::factory()->admin()->create();
+        $family = Family::factory()->approved()->create(['created_by' => $admin->id]);
+        $aidRequest = AidRequest::factory()->for($family)->approved()->create([
+            'created_by' => $admin->id,
+            'submitted_by' => $admin->id,
+            'title' => 'طلب تنفيذ قريب',
+        ]);
+
+        AidRequestItem::create([
+            'aid_request_id' => $aidRequest->id,
+            'category_id' => 1,
+            'title' => 'بند',
+            'execution_type' => 'وقتية',
+            'quantity' => 1,
+            'unit_cost' => 50,
+            'estimated_total' => 50,
+            'recurrence_type' => 'وقتية',
+            'priority' => 'عادية',
+            'sort_order' => 0,
+            'approved' => true,
+            'execution_start_date' => '2026-10-15',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(UpcomingExecutionStat::class)
+            ->assertSee('مواعيد تنفيذ قريبة')
+            ->assertSee('طلب تنفيذ قريب')
+            ->assertSee(route('aid-requests.show', $aidRequest, false));
+
+        Carbon::setTestNow();
     }
 
     public function test_user_preferences_component_renders_and_persists_changes(): void

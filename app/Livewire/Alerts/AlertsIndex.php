@@ -58,13 +58,23 @@ class AlertsIndex extends Component
     }
 
     #[Computed]
-    public function counts()
+    public function counts(): array
     {
+        $byStatus = Alert::query()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $overdue = Alert::query()
+            ->active()
+            ->overdue()
+            ->count();
+
         return [
-            'active' => Alert::active()->count(),
-            'overdue' => Alert::active()->overdue()->count(),
-            'dismissed' => Alert::dismissed()->count(),
-            'resolved' => Alert::resolved()->count(),
+            'active' => (int) ($byStatus[Alert::STATUS_ACTIVE] ?? 0),
+            'overdue' => $overdue,
+            'dismissed' => (int) ($byStatus[Alert::STATUS_DISMISSED] ?? 0),
+            'resolved' => (int) ($byStatus[Alert::STATUS_RESOLVED] ?? 0),
         ];
     }
 

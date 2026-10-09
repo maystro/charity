@@ -108,7 +108,7 @@ class AlertGenerationTest extends TestCase
 
         $this->artisan('app:generate-alerts')
             ->assertSuccessful()
-            ->expectsOutputToContain('تم إنشاء');
+            ->expectsOutputToContain('أُنشئ');
     }
 
     public function test_interval_setting_affects_alert_generation(): void

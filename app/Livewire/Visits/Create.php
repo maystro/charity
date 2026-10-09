@@ -70,6 +70,7 @@ class Create extends Component
     {
         return $this->familyQuery()
             ->orderBy('case_name')
+            ->limit(150)
             ->get(['id', 'case_name', 'case_number', 'detailed_address'])
             ->map(fn (Family $family): array => [
                 'id' => $family->id,
@@ -116,6 +117,7 @@ class Create extends Component
     {
         return Fieldworker::query()
             ->orderBy('name')
+            ->limit(200)
             ->get(['id', 'name', 'code'])
             ->map(fn (Fieldworker $fw): array => [
                 'id' => $fw->id,

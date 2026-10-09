@@ -216,6 +216,39 @@ class DeliveryServiceTest extends TestCase
         ]);
     }
 
+    public function test_recurring_item_prepared_for_next_cycle_after_delivery_confirm(): void
+    {
+        $user = User::factory()->create();
+        $family = Family::factory()->approved()->create(['created_by' => $user->id]);
+        $aidRequest = AidRequest::factory()->for($family)->create([
+            'status' => AidRequestStatus::PendingDeliveryReview->value,
+            'created_by' => $user->id,
+            'submitted_by' => $user->id,
+            'request_type' => 'دورية',
+        ]);
+
+        $item = $this->createItem($aidRequest, 'مساعدة شهرية', [
+            'execution_type' => 'دورية',
+            'recurrence_type' => 'دورية',
+            'execution_start_date' => now()->subDays(30)->toDateString(),
+            'recurrence_interval_days' => 30,
+            'recurrence_end' => now()->addMonths(6)->toDateString(),
+            'actual_cost' => 200,
+            'purchase_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($user);
+
+        app(DeliveryService::class)->reviewAndConfirmDelivery($aidRequest);
+
+        $aidRequest->refresh();
+        $item->refresh();
+
+        $this->assertSame(AidRequestStatus::Approved->value, $aidRequest->status);
+        $this->assertFalse($item->delivered);
+        $this->assertNotNull($item->delivery_date);
+    }
+
     public function test_review_and_confirm_delivery_fails_for_non_pending_review(): void
     {
         $user = User::factory()->create();

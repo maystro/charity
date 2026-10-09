@@ -25,7 +25,7 @@
             @if($aidRequestId)
                 <x-ui.badge variant="warning">مسودة</x-ui.badge>
                 <span class="text-xs text-[var(--color-text-muted)]">
-                    رقم الطلب: {{ \App\Models\AidRequest::find($aidRequestId)?->request_number }}
+                    رقم الطلب: {{ $aidRequestNumber }}
                 </span>
             @endif
             <x-ui.button variant="secondary" size="sm" type="button" wire:click="saveDraft" :loading="$submitting">

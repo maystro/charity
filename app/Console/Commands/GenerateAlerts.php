@@ -2,25 +2,45 @@
 
 namespace App\Console\Commands;
 
+use App\Contracts\Alerts\ScheduledAlertGenerator;
+use App\Services\Alerts\AidExecutionDueAlertService;
 use App\Services\Alerts\ReAssessmentAlertService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('app:generate-alerts')]
-#[Description('فحص الأسر المعتمدة وتوليد تنبيهات إعادة التقييم المستحقة والمتأخرة')]
+#[Description('توليد تنبيهات النظام المجدولة (إعادة التقييم، مواعيد التنفيذ، وغيرها)')]
 class GenerateAlerts extends Command
 {
     /**
-     * Execute the console command.
+     * @return array<int, class-string<ScheduledAlertGenerator>>
      */
-    public function handle(ReAssessmentAlertService $service): int
+    protected function generators(): array
     {
-        $this->info('بدء فحص تنبيهات إعادة التقييم...');
+        return [
+            ReAssessmentAlertService::class,
+            AidExecutionDueAlertService::class,
+        ];
+    }
 
-        $result = $service->generate();
+    public function handle(): int
+    {
+        $this->info('بدء توليد التنبيهات المجدولة...');
 
-        $this->info("تم إنشاء {$result['created']} تنبيه جديد وتحديث {$result['updated']} تنبيه موجود.");
+        foreach ($this->generators() as $generatorClass) {
+            $generator = app($generatorClass);
+            $label = class_basename($generatorClass);
+            $result = $generator->generate();
+
+            $this->line(sprintf(
+                '  %s: أُنشئ %d، حُدّث %d، أُغلق %d.',
+                $label,
+                $result['created'] ?? 0,
+                $result['updated'] ?? 0,
+                $result['resolved'] ?? 0,
+            ));
+        }
 
         return self::SUCCESS;
     }
