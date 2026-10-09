@@ -34,6 +34,36 @@
         </div>
     </x-ui.card>
 
+    <x-ui.card padding>
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)] mb-5">إعدادات طلبات المساعدة والتنفيذ</h2>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between gap-4 border border-[var(--color-border)] rounded-[var(--radius-md)] p-4">
+                <div>
+                    <p class="font-medium text-[var(--color-text-primary)]">تنبيه موعد التنفيذ</p>
+                    <p class="text-sm text-[var(--color-text-muted)] mt-1">
+                        يبدأ التنبيه قبل موعد تنفيذ البند (وقتية، طارئة، أو دورية) بهذا العدد من الأيام ويستمر حتى يوم الموعد، ثم يُعرض كمتأخر بعده.
+                    </p>
+                </div>
+                <div class="w-32 shrink-0">
+                    <x-ui.input
+                        type="number"
+                        name="execution_reminder_lead_days"
+                        wire:model="executionReminderLeadDays"
+                        min="0"
+                        max="30"
+                        size="sm"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 flex items-center justify-end">
+            <x-ui.button variant="primary" type="button" wire:click="save">
+                حفظ الإعدادات
+            </x-ui.button>
+        </div>
+    </x-ui.card>
+
     @if(auth()->user()?->isAdmin())
         <x-ui.card padding>
             <div class="flex items-start justify-between gap-4">

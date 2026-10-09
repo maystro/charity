@@ -15,14 +15,9 @@ class AssessmentHistory extends Component
     public function mount(Family $family): void
     {
         $this->family = $family->load([
-            'assessments.members',
-            'assessments.incomeSources',
-            'assessments.resources',
-            'assessments.burdens',
-            'assessments.housing',
-            'assessments.aids',
-            'assessments.creator',
-            'assessments.approver',
+            'assessments' => fn ($query) => $query->orderByDesc('round'),
+            'assessments.creator:id,name',
+            'assessments.approver:id,name',
         ]);
     }
 

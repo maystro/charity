@@ -71,9 +71,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
-                    @forelse($donor->donations as $i => $donation)
+                    @forelse($donations as $donation)
                         <tr class="hover:bg-[var(--color-bg-secondary)]/50 transition-colors">
-                            <td class="px-4 py-3 text-[var(--color-text-muted)] text-xs">{{ $i + 1 }}</td>
+                            <td class="px-4 py-3 text-[var(--color-text-muted)] text-xs">{{ ($donations->firstItem() ?? 1) + $loop->index }}</td>
                             <td class="px-4 py-3 text-[var(--color-text-secondary)]">{{ $donation->donated_at?->format('Y/m/d') ?? '—' }}</td>
                             <td class="px-4 py-3 font-mono text-[var(--color-text-primary)] font-semibold">
                                 {{ number_format((float) $donation->amount, 2) }} <span class="text-xs text-[var(--color-text-muted)]">ج.م</span>
@@ -110,7 +110,7 @@
                         </tr>
                     @endforelse
                 </tbody>
-                @if($donor->donations->isNotEmpty())
+                @if($donations->isNotEmpty())
                     <tfoot>
                         <tr class="border-t-2 border-[var(--accent-200)] bg-[var(--accent-50)]/50">
                             <td colspan="2" class="px-4 py-3 text-sm font-semibold text-[var(--accent-700)]">الإجمالي</td>
@@ -123,6 +123,12 @@
                 @endif
             </table>
         </div>
+
+        @if($donations->hasPages())
+            <div class="mt-4">
+                {{ $donations->links() }}
+            </div>
+        @endif
     </x-ui.card>
 
     <div class="flex justify-end">

@@ -6,7 +6,7 @@ use App\Models\Family;
 use App\Models\AidRequest;
 use App\Models\Fieldworker;
 use App\Models\Donation;
-use App\Models\FamilyAssessment;
+use App\Services\AidRequests\AidRequestStatusCounts;
 use Illuminate\Support\Number;
 
 new
@@ -43,6 +43,11 @@ class extends Component
 
         // Active aid requests (approved, partially_approved, in_execution, delivered, completed)
         $activeStatuses = ['approved', 'partially_approved', 'in_execution', 'delivered', 'completed'];
+        $statusCounts = app(AidRequestStatusCounts::class);
+        $activeAidTotal = $statusCounts->sumForStatuses(
+            $statusCounts->countsByStatus(),
+            $activeStatuses
+        );
         $aidCurrent = AidRequest::whereIn('status', $activeStatuses)
             ->whereBetween('created_at', [$currentStart, $currentEnd . ' 23:59:59'])->count();
         $aidPrevious = AidRequest::whereIn('status', $activeStatuses)
@@ -67,7 +72,7 @@ class extends Component
             ],
             [
                 'label' => 'المساعدات النشطة',
-                'value' => Number::format(AidRequest::whereIn('status', $activeStatuses)->count()),
+                'value' => Number::format($activeAidTotal),
                 'change' => $this->formatChange($aidCurrent, $aidPrevious),
                 'trend' => $aidCurrent >= $aidPrevious ? 'up' : 'down',
                 'icon' => 'gift',
@@ -174,8 +179,8 @@ class extends Component
             <p class="text-sm text-[var(--color-text-muted)] mt-1">نظرة عامة على أداء النظام</p>
         </div>
         <div class="flex items-center gap-3">
-            <x-ui.date-input wire:model.live="dateFrom" name="date-from" label="من" />
-            <x-ui.date-input wire:model.live="dateTo" name="date-to" label="إلى" />
+            <x-ui.date-input wire:model.live.debounce.500ms="dateFrom" name="date-from" label="من" />
+            <x-ui.date-input wire:model.live.debounce.500ms="dateTo" name="date-to" label="إلى" />
         </div>
     </div>
 

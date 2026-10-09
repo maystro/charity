@@ -24,6 +24,8 @@ class CreateAidRequest extends Component
     /** معرّف طلب المساعدة عند التعديل */
     public ?int $aidRequestId = null;
 
+    public ?string $aidRequestNumber = null;
+
     /** الأسرة المختارة */
     public ?int $family_id = null;
 
@@ -121,6 +123,7 @@ class CreateAidRequest extends Component
         $this->authorize('update', $request);
 
         $this->aidRequestId = $request->id;
+        $this->aidRequestNumber = $request->request_number;
         $this->family_id = $request->family_id;
         $this->source_type = $request->source_type ?? 'الأسرة مباشرة';
         $this->applicant_name = $request->applicant_name;
@@ -159,6 +162,7 @@ class CreateAidRequest extends Component
         }
 
         return $query
+            ->limit(150)
             ->get(['id', 'case_name', 'case_number'])
             ->map(fn (Family $f) => ['id' => $f->id, 'name' => $f->case_name.' ('.$f->case_number.')'])
             ->toArray();
@@ -342,6 +346,7 @@ class CreateAidRequest extends Component
 
         $aidRequest = app(AidRequestService::class)->createOrUpdateDraft($data, $this->aidRequestId);
         $this->aidRequestId = $aidRequest->id;
+        $this->aidRequestNumber = $aidRequest->request_number;
 
         $this->dispatch('toast', message: 'تم حفظ الطلب كمسودة لحين الاعتماد.', type: 'success');
     }

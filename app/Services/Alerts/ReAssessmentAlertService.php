@@ -2,18 +2,21 @@
 
 namespace App\Services\Alerts;
 
+use App\Contracts\Alerts\ScheduledAlertGenerator;
 use App\Enums\FamilyStatus;
 use App\Models\Alert;
 use App\Models\Family;
 use App\Models\SystemSetting;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
-class ReAssessmentAlertService
+class ReAssessmentAlertService implements ScheduledAlertGenerator
 {
     /**
      * Scan approved families and generate re-assessment due/overdue alerts.
      *
-     * @return array{created: int, updated: int}
+     * @return array{created: int, updated: int, resolved: int}
      */
     public function generate(): array
     {
@@ -23,11 +26,12 @@ class ReAssessmentAlertService
         $created = 0;
         $updated = 0;
 
-        // Approved families with a current assessment that has approved_at
-        $families = Family::where('status', FamilyStatus::Approved->value)
-            ->whereNotNull('current_assessment_id')
-            ->with('currentAssessment')
-            ->get();
+        $activeAlerts = Alert::activeGroupedByAlertable(Family::class, [
+            Alert::TYPE_REASSESSMENT_DUE,
+            Alert::TYPE_REASSESSMENT_OVERDUE,
+        ]);
+
+        $families = $this->familiesToProcess($threshold, $activeAlerts);
 
         foreach ($families as $family) {
             $assessment = $family->currentAssessment;
@@ -37,21 +41,10 @@ class ReAssessmentAlertService
             }
 
             $dueAt = $assessment->approved_at->copy()->addMonths($intervalMonths);
+            $familyAlerts = $activeAlerts->get($family->id, collect());
 
-            // Skip if not yet due
             if ($dueAt->isFuture()) {
-                // If there's an existing active alert that is now not yet due (e.g. interval changed), resolve it
-                $existing = Alert::active()
-                    ->forType(Alert::TYPE_REASSESSMENT_DUE)
-                    ->forAlertable($family)
-                    ->first();
-
-                if (! $existing) {
-                    $existing = Alert::active()
-                        ->forType(Alert::TYPE_REASSESSMENT_OVERDUE)
-                        ->forAlertable($family)
-                        ->first();
-                }
+                $existing = $this->firstReassessmentAlert($familyAlerts);
 
                 if ($existing) {
                     $existing->resolve();
@@ -61,7 +54,6 @@ class ReAssessmentAlertService
                 continue;
             }
 
-            // Determine if overdue (due date passed)
             $isOverdue = $dueAt->isPast();
 
             $type = $isOverdue
@@ -72,14 +64,9 @@ class ReAssessmentAlertService
                 ? Alert::SEVERITY_CRITICAL
                 : Alert::SEVERITY_WARNING;
 
-            // Check for existing active alert of this type for this family
-            $existing = Alert::active()
-                ->forType($type)
-                ->forAlertable($family)
-                ->first();
+            $existing = $familyAlerts->firstWhere('type', $type);
 
             if ($existing) {
-                // Update due_at if needed and ensure severity/title/message are current
                 $existing->update([
                     'severity' => $severity,
                     'due_at' => $dueAt,
@@ -88,13 +75,10 @@ class ReAssessmentAlertService
                 ]);
                 $updated++;
             } else {
-                // If upgrading from due to overdue, resolve the old due alert
                 if ($isOverdue) {
-                    Alert::active()
-                        ->forType(Alert::TYPE_REASSESSMENT_DUE)
-                        ->forAlertable($family)
-                        ->get()
-                        ->each(fn ($a) => $a->resolve());
+                    $familyAlerts
+                        ->where('type', Alert::TYPE_REASSESSMENT_DUE)
+                        ->each(fn (Alert $alert) => $alert->resolve());
                 }
 
                 Alert::create([
@@ -111,7 +95,43 @@ class ReAssessmentAlertService
             }
         }
 
-        return ['created' => $created, 'updated' => $updated];
+        return ['created' => $created, 'updated' => $updated, 'resolved' => 0];
+    }
+
+    /**
+     * @param  Collection<int, Collection<int, Alert>>  $activeAlerts
+     * @return \Illuminate\Database\Eloquent\Collection<int, Family>
+     */
+    protected function familiesToProcess(Carbon $threshold, Collection $activeAlerts): \Illuminate\Database\Eloquent\Collection
+    {
+        $familyIdsWithActiveAlerts = $activeAlerts->keys()->all();
+
+        return Family::query()
+            ->where('status', FamilyStatus::Approved->value)
+            ->whereNotNull('current_assessment_id')
+            ->where(function (Builder $query) use ($threshold, $familyIdsWithActiveAlerts): void {
+                $query->whereHas('currentAssessment', function (Builder $assessment) use ($threshold): void {
+                    $assessment->whereNotNull('approved_at')
+                        ->where('approved_at', '<=', $threshold);
+                });
+
+                if ($familyIdsWithActiveAlerts !== []) {
+                    $query->orWhereIn('id', $familyIdsWithActiveAlerts);
+                }
+            })
+            ->with('currentAssessment')
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, Alert>  $familyAlerts
+     */
+    protected function firstReassessmentAlert(Collection $familyAlerts): ?Alert
+    {
+        return $familyAlerts->first(fn (Alert $alert): bool => in_array($alert->type, [
+            Alert::TYPE_REASSESSMENT_DUE,
+            Alert::TYPE_REASSESSMENT_OVERDUE,
+        ], true));
     }
 
     protected function titleFor(string $type): string

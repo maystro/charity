@@ -4,6 +4,7 @@ namespace App\Livewire\AidRequests;
 
 use App\Enums\AidRequestStatus;
 use App\Models\AidRequest;
+use App\Services\AidRequests\AidRequestStatusCounts;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
@@ -99,19 +100,23 @@ abstract class BaseAidRequestsIndex extends Component
     }
 
     #[Computed]
+    public function tabCounts(): array
+    {
+        return app(AidRequestStatusCounts::class)->reviewTabCounts(
+            $this->scopedQuery(AidRequest::query())
+        );
+    }
+
+    #[Computed]
     public function underReviewCount(): int
     {
-        return $this->scopedQuery(
-            AidRequest::whereIn('status', AidRequestStatus::underReviewStatuses())
-        )->count();
+        return $this->tabCounts['under_review'];
     }
 
     #[Computed]
     public function approvedCount(): int
     {
-        return $this->scopedQuery(
-            AidRequest::whereIn('status', AidRequestStatus::approvedStatuses())
-        )->count();
+        return $this->tabCounts['approved'];
     }
 
     public function delete(int $id): void

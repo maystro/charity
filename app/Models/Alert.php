@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Collection;
 
 class Alert extends Model
 {
@@ -56,6 +57,10 @@ class Alert extends Model
     public const TYPE_AID_REQUEST_COMPLETED = 'aid_request_completed';
 
     public const TYPE_AID_REQUEST_OVERDUE = 'aid_request_overdue';
+
+    public const TYPE_AID_EXECUTION_DUE = 'aid_execution_due';
+
+    public const TYPE_AID_EXECUTION_OVERDUE = 'aid_execution_overdue';
 
     public const SEVERITY_INFO = 'info';
 
@@ -132,6 +137,23 @@ class Alert extends Model
     }
 
     // --- Helpers ---
+
+    /**
+     * Active alerts for an alertable type, grouped by alertable_id.
+     *
+     * @param  class-string<Model>  $alertableType
+     * @param  array<int, string>  $types
+     * @return Collection<int, Collection<int, Alert>>
+     */
+    public static function activeGroupedByAlertable(string $alertableType, array $types): Collection
+    {
+        return static::query()
+            ->active()
+            ->where('alertable_type', $alertableType)
+            ->whereIn('type', $types)
+            ->get()
+            ->groupBy('alertable_id');
+    }
 
     public function dismiss(): bool
     {

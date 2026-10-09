@@ -11,7 +11,6 @@
 @endphp
 
 <div
-    wire:poll.30s.visible
     x-data="{ open: false }"
     @click.outside="open = false"
     @keydown.escape.window="open = false"

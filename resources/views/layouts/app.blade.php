@@ -42,6 +42,8 @@
         {{-- Sidebar (right column) --}}
         <livewire:sidebar />
         <livewire:user-preferences />
+        <livewire:change-password />
+        <livewire:profile />
 
         {{-- Left column: TOP_BAR on top, main content below --}}
         <div class="flex-1 flex flex-col h-full" style="gap: var(--shell-gap);">
@@ -62,6 +64,8 @@
                 {{-- Right side in RTL (first child): alert stat tiles --}}
                 @auth
                     @if (! auth()->user()->isSuperAdmin())
+                        <livewire:shared.top-bar-stats-refresher />
+
                         {{-- ١. حالات بانتظار الاعتماد --}}
                         <livewire:shared.pending-approvals-stat />
 
@@ -70,6 +74,9 @@
 
                         {{-- ٣. طلبات المساعدة الجديدة --}}
                         <livewire:shared.new-aid-requests-stat />
+
+                        {{-- ٤. مواعيد تنفيذ المساعدات --}}
+                        <livewire:shared.upcoming-execution-stat />
                     @endif
                 @endauth
 

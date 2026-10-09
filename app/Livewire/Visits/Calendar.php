@@ -48,6 +48,7 @@ class Calendar extends Component
         $end = Carbon::parse($this->currentMonth.'-01')->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         return $this->scopedVisitQuery()
+            ->with(['family:id,case_name,case_number'])
             ->whereBetween('scheduled_at', [$start, $end])
             ->when($this->visitType, fn (Builder $query) => $query->where('visit_type', $this->visitType))
             ->when($this->researcher_id, fn (Builder $query) => $query->where('researcher_id', $this->researcher_id))

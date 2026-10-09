@@ -7,7 +7,8 @@ use App\Models\AidRequest;
 use App\Models\AidRequestItem;
 use App\Models\AidRequestStatusHistory;
 use App\Models\Alert;
-use Illuminate\Database\Eloquent\Collection;
+use App\Services\ExecutionSchedule\RecurringExecutionCycle;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -60,6 +61,12 @@ class DeliveryService
                 ->pluck('id')
                 ->toArray();
 
+            $itemIds = array_column($itemsData, 'id');
+            $itemsById = $aidRequest->items()
+                ->whereIn('id', $itemIds)
+                ->get()
+                ->keyBy('id');
+
             foreach ($itemsData as $itemData) {
                 $itemId = $itemData['id'];
 
@@ -67,7 +74,11 @@ class DeliveryService
                     abort(422, "البند #{$itemId} غير معتمد أو غير موجود في هذا الطلب.");
                 }
 
-                $item = AidRequestItem::findOrFail($itemId);
+                $item = $itemsById->get($itemId);
+
+                if (! $item) {
+                    abort(422, "البند #{$itemId} غير موجود في هذا الطلب.");
+                }
 
                 $item->update([
                     'actual_cost' => $itemData['actual_cost'],
@@ -109,24 +120,44 @@ class DeliveryService
             }
 
             $fromStatus = $aidRequest->status;
+            $deliveryDate = now()->toDateString();
+            $cycleHelper = app(RecurringExecutionCycle::class);
+            $hasContinuingRecurring = false;
 
-            // تعليم كل البنود المعتمدة كمسلّمة
             $aidRequest->items()
                 ->where('approved', true)
-                ->update([
-                    'delivered' => true,
-                    'delivery_date' => now()->toDateString(),
-                    'delivered_by' => Auth::id(),
-                ]);
+                ->get()
+                ->each(function (AidRequestItem $item) use ($deliveryDate, $cycleHelper, &$hasContinuingRecurring): void {
+                    $item->update([
+                        'delivered' => true,
+                        'delivery_date' => $deliveryDate,
+                        'delivered_by' => Auth::id(),
+                    ]);
+
+                    $this->resolveExecutionAlertsForItem($item);
+
+                    $item->refresh();
+
+                    if ($item->isRecurring() && $cycleHelper->hasAnotherCycle($item)) {
+                        $hasContinuingRecurring = true;
+                        $item->update([
+                            'delivered' => false,
+                        ]);
+                    }
+                });
+
+            $toStatus = $hasContinuingRecurring
+                ? AidRequestStatus::Approved->value
+                : AidRequestStatus::Delivered->value;
 
             $aidRequest->update([
-                'status' => AidRequestStatus::Delivered->value,
+                'status' => $toStatus,
             ]);
 
             AidRequestStatusHistory::create([
                 'aid_request_id' => $aidRequest->id,
                 'from_status' => $fromStatus,
-                'to_status' => AidRequestStatus::Delivered->value,
+                'to_status' => $toStatus,
                 'changed_by' => Auth::id(),
                 'notes' => $reviewNotes,
                 'created_at' => now(),
@@ -149,6 +180,18 @@ class DeliveryService
 
             return $aidRequest->fresh();
         });
+    }
+
+    protected function resolveExecutionAlertsForItem(AidRequestItem $item): void
+    {
+        Alert::active()
+            ->forAlertable($item)
+            ->whereIn('type', [
+                Alert::TYPE_AID_EXECUTION_DUE,
+                Alert::TYPE_AID_EXECUTION_OVERDUE,
+            ])
+            ->get()
+            ->each(fn (Alert $alert) => $alert->resolve());
     }
 
     /**
@@ -197,46 +240,56 @@ class DeliveryService
     }
 
     /**
-     * الحصول على الطلبات الجاهزة للتنفيذ (معتمدة ولم يبدأ تنفيذها بعد).
+     * استعلام الطلبات الجاهزة للتنفيذ (معتمدة ولم يبدأ تنفيذها بعد).
+     *
+     * @return Builder<AidRequest>
      */
-    public function getReadyRequests(): Collection
+    public function readyRequestsQuery(): Builder
     {
-        return AidRequest::whereIn('status', AidRequestStatus::approvedStatuses())->latest()->get();
+        return AidRequest::query()
+            ->whereIn('status', AidRequestStatus::approvedStatuses())
+            ->latest();
     }
 
     /**
-     * الحصول على الطلبات قيد التنفيذ (المندوب يشتري).
+     * @return Builder<AidRequest>
      */
-    public function getInExecutionRequests(): Collection
+    public function inExecutionRequestsQuery(): Builder
     {
-        return AidRequest::where('status', AidRequestStatus::InExecution->value)->latest()->get();
+        return AidRequest::query()
+            ->where('status', AidRequestStatus::InExecution->value)
+            ->latest();
     }
 
     /**
-     * الحصول على الطلبات بانتظار مراجعة التسليم.
+     * @return Builder<AidRequest>
      */
-    public function getPendingReviewRequests(): Collection
+    public function pendingReviewRequestsQuery(): Builder
     {
-        return AidRequest::where('status', AidRequestStatus::PendingDeliveryReview->value)->latest()->get();
+        return AidRequest::query()
+            ->where('status', AidRequestStatus::PendingDeliveryReview->value)
+            ->latest();
     }
 
     /**
-     * الحصول على الطلبات المسلّمة.
+     * @return Builder<AidRequest>
      */
-    public function getDeliveredRequests(): Collection
+    public function deliveredRequestsQuery(): Builder
     {
-        return AidRequest::where('status', AidRequestStatus::Delivered->value)->latest()->get();
+        return AidRequest::query()
+            ->where('status', AidRequestStatus::Delivered->value)
+            ->latest();
     }
 
     /**
-     * الحصول على الطلبات المتأخرة (قيد التنفيذ وتجاوزت تاريخ الاستحقاق).
+     * @return Builder<AidRequest>
      */
-    public function getOverdueRequests(): Collection
+    public function overdueRequestsQuery(): Builder
     {
-        return AidRequest::where('status', AidRequestStatus::InExecution->value)
-            ->whereNotNull('execution_deadline')
-            ->where('execution_deadline', '<', now()->toDateString())
-            ->latest()
-            ->get();
+        return AidRequest::query()
+            ->where('status', AidRequestStatus::InExecution->value)
+            ->whereNotNull('needed_by')
+            ->where('needed_by', '<', now()->toDateString())
+            ->latest();
     }
 }
