@@ -55,8 +55,28 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 });
 
+Route::get('/force-logout', fn () => view('force-logout'))->name('force-logout');
+
+Route::match(['GET', 'POST'], '/force-logout/now', function () {
+    try {
+        auth()->logout();
+    } catch (Throwable) {
+        // Session can still be cleared when the database is unavailable.
+    }
+
+    session()->invalidate();
+    session()->regenerateToken();
+
+    return redirect()->route('login');
+})->name('force-logout.now');
+
 Route::post('/logout', function () {
-    auth()->logout();
+    try {
+        auth()->logout();
+    } catch (Throwable) {
+        //
+    }
+
     session()->invalidate();
     session()->regenerateToken();
 

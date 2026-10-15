@@ -506,18 +506,14 @@ class SmartDeploymentService
     }
 
     /**
-     * @return array{total_files: int, total_size: int, last_deployment: SmartDeployment|null, synced: bool, manifest_exists: bool, manifest_files: int}
+     * Lightweight dashboard stats (no filesystem scan).
+     *
+     * @return array{last_deployment: SmartDeployment|null, manifest_exists: bool, manifest_files: int}
      */
     public function getStats(): array
     {
-        $current = $this->scanLocalFiles();
-        $changes = $this->getLocalChanges();
-
         return [
-            'total_files' => count($current),
-            'total_size' => $this->totalSize(array_keys($current)),
             'last_deployment' => SmartDeployment::query()->orderByDesc('id')->first(),
-            'synced' => count($changes['added']) + count($changes['modified']) + count($changes['removed']) === 0,
             'manifest_exists' => is_file($this->manifestPath()),
             'manifest_files' => count($this->loadManifest()),
         ];

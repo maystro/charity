@@ -303,22 +303,29 @@ class SmartDeploymentTest extends TestCase
     // Stats
     // -----------------------------------------------------------------
 
-    public function test_stats_reports_totals_and_sync_state(): void
+    public function test_stats_reads_manifest_and_last_deployment_without_scanning_project(): void
     {
         $service = $this->service();
 
         $stats = $service->getStats();
 
-        $this->assertGreaterThan(0, $stats['total_files']);
-        $this->assertSame(false, $stats['synced']);
+        $this->assertArrayNotHasKey('total_files', $stats);
+        $this->assertArrayNotHasKey('synced', $stats);
         $this->assertSame(false, $stats['manifest_exists']);
+        $this->assertSame(0, $stats['manifest_files']);
+        $this->assertNull($stats['last_deployment']);
 
-        $service->saveManifest($service->scanLocalFiles());
+        $service->saveManifest(['app/Models/User.php' => 'abc123']);
+
+        $record = $service->startRecord($this->superAdmin(), 'local');
+        $service->completeRecord($record, ['files_count' => 1, 'total_size' => 10, 'files' => ['app/Models/User.php']]);
 
         $stats = $service->getStats();
-        $this->assertSame(true, $stats['synced']);
-        $this->assertSame(true, $stats['manifest_exists']);
-        $this->assertSame($stats['total_files'], $stats['manifest_files']);
+
+        $this->assertTrue($stats['manifest_exists']);
+        $this->assertSame(1, $stats['manifest_files']);
+        $this->assertNotNull($stats['last_deployment']);
+        $this->assertSame($record->id, $stats['last_deployment']->id);
     }
 
     // -----------------------------------------------------------------

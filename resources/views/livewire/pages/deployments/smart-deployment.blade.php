@@ -295,14 +295,14 @@
         <x-ui.stat
             icon="check-badge"
             label="حالة المزامنة"
-            :number="$stats['synced'] ? 'متزامن' : 'غير متزامن'"
-            :variant="$stats['synced'] ? 'success' : 'warning'"
+            :number="$syncStatus['number']"
+            :variant="$syncStatus['variant']"
         />
         <x-ui.stat
             icon="document-text"
-            label="إجمالي الملفات"
-            :number="$stats['total_files']"
-            variant="primary"
+            :label="$pendingChanges['label']"
+            :number="$pendingChanges['number']"
+            :variant="$pendingChanges['variant']"
         />
         <x-ui.stat
             icon="archive-box"
@@ -375,7 +375,11 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full table-fixed text-sm">
+                        <colgroup>
+                            <col class="w-[20%]">
+                            <col class="w-[80%]">
+                        </colgroup>
                         <thead>
                             <tr class="text-xs text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
                                 <th class="text-start font-medium py-2 pe-4">حالة الملف</th>
@@ -392,12 +396,22 @@
                                     };
                                 @endphp
                                 <tr class="hover:bg-[var(--color-bg-secondary)]/50">
-                                    <td class="py-2.5 pe-4">
+                                    <td class="py-2.5 pe-4 align-middle whitespace-nowrap">
                                         <x-ui.badge :variant="$badge['variant']" dot size="sm">
                                             {{ $badge['label'] }}
                                         </x-ui.badge>
                                     </td>
-                                    <td class="py-2.5 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{{ $file['path'] }}</td>
+                                    <td class="py-2.5 max-w-0 align-middle">
+                                        <span
+                                            class="block min-w-0 truncate text-start"
+                                            dir="rtl"
+                                            title="{{ $file['path'] }}"
+                                        >
+                                            <span dir="ltr" class="font-mono text-xs text-[var(--color-text-secondary)]">
+                                                {{ $file['path'] }}
+                                            </span>
+                                        </span>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

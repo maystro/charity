@@ -501,6 +501,8 @@ class SmartDeployment extends Component
         return view('livewire.pages.deployments.smart-deployment', [
             'recentDeployments' => $this->recentDeployments,
             'stats' => $this->computeStats(),
+            'syncStatus' => $this->syncStatusDisplay(),
+            'pendingChanges' => $this->pendingChangesDisplay(),
         ]);
     }
 
@@ -513,13 +515,54 @@ class SmartDeployment extends Component
             return $this->service->getStats();
         } catch (Throwable) {
             return [
-                'total_files' => 0,
-                'total_size' => 0,
                 'last_deployment' => null,
-                'synced' => false,
                 'manifest_exists' => false,
                 'manifest_files' => 0,
             ];
         }
+    }
+
+    /**
+     * @return array{number: string, variant: string}
+     */
+    public function syncStatusDisplay(): array
+    {
+        if ($this->currentStatus === 'idle') {
+            return ['number' => 'لم يُفحص', 'variant' => 'neutral'];
+        }
+
+        if ($this->isScanning || $this->currentStatus === 'scanning') {
+            return ['number' => 'جاري الفحص...', 'variant' => 'neutral'];
+        }
+
+        if ($this->currentStatus === 'error') {
+            return ['number' => 'فشل الفحص', 'variant' => 'danger'];
+        }
+
+        $pending = count($this->addedFiles) + count($this->modifiedFiles) + count($this->deletedFiles);
+
+        if ($pending === 0) {
+            return ['number' => 'متزامن', 'variant' => 'success'];
+        }
+
+        return ['number' => 'غير متزامن', 'variant' => 'warning'];
+    }
+
+    /**
+     * @return array{label: string, number: string|int, variant: string}
+     */
+    public function pendingChangesDisplay(): array
+    {
+        if ($this->currentStatus === 'idle' || $this->isScanning) {
+            return ['label' => 'تغييرات معلقة', 'number' => '—', 'variant' => 'neutral'];
+        }
+
+        $pending = count($this->addedFiles) + count($this->modifiedFiles) + count($this->deletedFiles);
+
+        return [
+            'label' => 'تغييرات معلقة',
+            'number' => $pending,
+            'variant' => $pending > 0 ? 'warning' : 'success',
+        ];
     }
 }
