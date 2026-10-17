@@ -173,6 +173,12 @@ class Navigation
             return true;
         }
 
+        if ($routeName === 'attachments.download') {
+            return $user->isFieldworker()
+                || $user->canAccessMenu('aid-requests.index')
+                || $user->canAccessMenu('delivery.index');
+        }
+
         if ($user->isFieldworker()) {
             return self::routeBelongsToGroup($routeName, self::groups()['fieldwork']['items']);
         }

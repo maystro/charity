@@ -9,22 +9,26 @@ class FamilyPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin() || $user->isFieldworker();
+        return $user->isAdmin() || $user->isFieldworker() || $user->canAccessMenu('families.index');
     }
 
     public function view(User $user, Family $family): bool
     {
-        return $user->isAdmin() || $this->ownsFamily($user, $family);
+        if ($user->isAdmin() || $user->canAccessMenu('families.index')) {
+            return true;
+        }
+
+        return $user->isFieldworker() && $this->ownsFamily($user, $family);
     }
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isFieldworker();
+        return $user->isAdmin() || $user->isFieldworker() || $user->canAccessMenu('families.index');
     }
 
     public function editDraft(User $user, Family $family): bool
     {
-        return ($user->isAdmin() || $this->ownsFamily($user, $family))
+        return ($user->isAdmin() || $user->canAccessMenu('families.index') || ($user->isFieldworker() && $this->ownsFamily($user, $family)))
             && in_array($family->status, ['draft', 'needs_completion'], true);
     }
 
@@ -60,7 +64,7 @@ class FamilyPolicy
 
     public function delete(User $user, Family $family): bool
     {
-        return ($user->isAdmin() || $this->ownsFamily($user, $family))
+        return ($user->isAdmin() || $user->canAccessMenu('families.index') || ($user->isFieldworker() && $this->ownsFamily($user, $family)))
             && $family->status === 'draft';
     }
 

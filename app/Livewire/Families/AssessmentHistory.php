@@ -14,6 +14,8 @@ class AssessmentHistory extends Component
 
     public function mount(Family $family): void
     {
+        $this->authorize('view', $family);
+
         $this->family = $family->load([
             'assessments' => fn ($query) => $query->orderByDesc('round'),
             'assessments.creator:id,name',

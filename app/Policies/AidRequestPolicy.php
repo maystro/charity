@@ -20,8 +20,11 @@ class AidRequestPolicy
      */
     public function view(User $user, AidRequest $aidRequest): bool
     {
-        return ($user->isAdmin() || $user->isFieldworker())
-            && $this->belongsToSameScope($user, $aidRequest);
+        if ($user->isAdmin() || $user->canAccessMenu('aid-requests.index') || $user->canAccessMenu('delivery.index')) {
+            return true;
+        }
+
+        return $user->isFieldworker() && $this->belongsToSameScope($user, $aidRequest);
     }
 
     /**
@@ -29,7 +32,7 @@ class AidRequestPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isFieldworker();
+        return $user->isAdmin() || $user->isFieldworker() || $user->canAccessMenu('aid-requests.index');
     }
 
     /**
@@ -37,9 +40,8 @@ class AidRequestPolicy
      */
     public function update(User $user, AidRequest $aidRequest): bool
     {
-        return ($user->isAdmin() || $user->isFieldworker())
-            && in_array($aidRequest->status, ['draft', 'needs_completion'], true)
-            && $this->belongsToSameScope($user, $aidRequest);
+        return ($user->isAdmin() || $user->canAccessMenu('aid-requests.index') || ($user->isFieldworker() && $this->belongsToSameScope($user, $aidRequest)))
+            && in_array($aidRequest->status, ['draft', 'needs_completion'], true);
     }
 
     /**
@@ -47,9 +49,8 @@ class AidRequestPolicy
      */
     public function submit(User $user, AidRequest $aidRequest): bool
     {
-        return ($user->isAdmin() || $user->isFieldworker())
-            && $aidRequest->status === 'draft'
-            && $this->belongsToSameScope($user, $aidRequest);
+        return ($user->isAdmin() || $user->canAccessMenu('aid-requests.index') || ($user->isFieldworker() && $this->belongsToSameScope($user, $aidRequest)))
+            && $aidRequest->status === 'draft';
     }
 
     /**
@@ -58,6 +59,7 @@ class AidRequestPolicy
     public function delete(User $user, AidRequest $aidRequest): bool
     {
         return $user->isAdmin()
+            || $user->canAccessMenu('aid-requests.index')
             || ($user->isFieldworker()
                 && $aidRequest->status === 'draft'
                 && $this->belongsToSameScope($user, $aidRequest));

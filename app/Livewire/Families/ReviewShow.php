@@ -27,11 +27,14 @@ class ReviewShow extends Component
 
     public function mount(Family $family): void
     {
+        $this->authorize('review', $family);
+
         $this->family = $family->load(['members', 'incomeSources', 'resources', 'burdens', 'housing', 'aids', 'statusHistories.changer', 'creator', 'submitter']);
     }
 
     public function approve(): void
     {
+        $this->authorize('approve', $this->family);
         $this->validate(['reviewNotes' => 'nullable|string']);
 
         app(FamilyApprovalService::class)->approve($this->family, $this->reviewNotes ?: null);
@@ -42,6 +45,7 @@ class ReviewShow extends Component
 
     public function returnForCompletion(): void
     {
+        $this->authorize('returnForCompletion', $this->family);
         $this->validate(['returnReason' => 'required|string']);
 
         app(FamilyApprovalService::class)->returnForCompletion($this->family, $this->returnReason);
@@ -52,6 +56,7 @@ class ReviewShow extends Component
 
     public function reject(): void
     {
+        $this->authorize('reject', $this->family);
         $this->validate(['rejectionReason' => 'required|string']);
 
         app(FamilyApprovalService::class)->reject($this->family, $this->rejectionReason);

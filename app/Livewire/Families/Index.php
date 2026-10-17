@@ -75,18 +75,19 @@ class Index extends Component
 
     /**
      * يُستدعى من خلال فئات مُنحِدة لتحديد سجللات الأسر التي يراها المستخدم.
-     * القاعدة ترجع كل السجللات (للمدير). المندوب يرى فقط أسره.
+     * القاعدة ترجع كل السجللات (للمدير أو المستخدم المصرح له). المندوب يرى فقط أسره.
      */
     protected function scopedFamilyQuery()
     {
         $user = auth()->user();
-        if (! $user || $user->isAdmin()) {
+        if (! $user || ! $user->isFieldworker()) {
             return Family::query();
         }
 
         // المندوب: يرى الأسر التي قام بإرسالها أو المرتبطة ببطاقته الميداني.
         return Family::query()->where(function ($q) use ($user) {
             $q->where('submitted_by', $user->id)
+                ->orWhere('created_by', $user->id)
                 ->orWhere('fieldworker_id', $user->fieldworker?->id);
         });
     }

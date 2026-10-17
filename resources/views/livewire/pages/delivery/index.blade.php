@@ -227,7 +227,7 @@ use function Livewire\Volt\{state};
                         @endif
 
                         {{-- pending_review: مراجعة التسليم --}}
-                        @if ($tab === 'pending_review')
+                        @if ($tab === 'pending_review' && $this->canReviewDelivery)
                             <x-ui.button
                                 variant="primary"
                                 icon="clipboard-check"

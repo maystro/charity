@@ -167,6 +167,12 @@ Route::middleware(['auth', EnsureRouteAccess::class])->group(function () {
 
     // Attachment download (local disk)
     Route::get('/attachments/{attachment}', function (AidRequestAttachment $attachment) {
+        $attachment->loadMissing('aidRequest');
+
+        if (! $attachment->aidRequest || ! auth()->user()?->can('view', $attachment->aidRequest)) {
+            abort(403);
+        }
+
         if (! Storage::disk($attachment->disk)->exists($attachment->path)) {
             abort(404);
         }

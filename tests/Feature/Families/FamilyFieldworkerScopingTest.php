@@ -83,4 +83,45 @@ class FamilyFieldworkerScopingTest extends TestCase
         $this->assertContains('نوع مندوب', $caseTypes);
         $this->assertNotContains('نوع آخر', $caseTypes);
     }
+
+    public function test_fieldworker_cannot_view_other_fieldworkers_family_show_or_assessment_history(): void
+    {
+        $fieldworker = User::factory()->fieldworker()->create();
+        $other = User::factory()->fieldworker()->create();
+
+        $ownFamily = Family::factory()->approved()->create([
+            'submitted_by' => $fieldworker->id,
+            'created_by' => $fieldworker->id,
+        ]);
+
+        $otherFamily = Family::factory()->approved()->create([
+            'submitted_by' => $other->id,
+            'created_by' => $other->id,
+        ]);
+
+        $this->actingAs($fieldworker)
+            ->get(route('families.show', $ownFamily))
+            ->assertOk();
+
+        $this->actingAs($fieldworker)
+            ->get(route('families.show', $otherFamily))
+            ->assertForbidden();
+
+        $this->actingAs($fieldworker)
+            ->get(route('families.assessment-history', $otherFamily))
+            ->assertForbidden();
+    }
+
+    public function test_fieldworker_cannot_access_family_review_page_or_approve(): void
+    {
+        $fieldworker = User::factory()->fieldworker()->create();
+        $family = Family::factory()->underReview()->create([
+            'submitted_by' => $fieldworker->id,
+            'created_by' => $fieldworker->id,
+        ]);
+
+        $this->actingAs($fieldworker)
+            ->get(route('families.review-show', $family))
+            ->assertForbidden();
+    }
 }

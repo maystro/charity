@@ -7,6 +7,7 @@ use App\Models\AidRequest;
 use App\Services\AidRequests\AidRequestStatusCounts;
 use App\Services\AidRequests\DeliveryService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -71,6 +72,39 @@ class DeliveryIndex extends Component
 
     // ─── Computed Properties ──────────────────────────────────────────────────
 
+    /**
+     * تصفية الاستعلام للمندوب ليرى طلباته فقط.
+     *
+     * @param  Builder<AidRequest>|null  $query
+     * @return Builder<AidRequest>
+     */
+    protected function scopedQuery(?Builder $query = null): Builder
+    {
+        $query ??= AidRequest::query();
+        $user = Auth::user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->isFieldworker()) {
+            return $query->where(function (Builder $sub) use ($user): void {
+                $sub->where('submitted_by', $user->id)
+                    ->orWhere('created_by', $user->id);
+            });
+        }
+
+        return $query;
+    }
+
+    #[Computed]
+    public function canReviewDelivery(): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null && $user->isAdmin();
+    }
+
     #[Computed]
     public function requests(): LengthAwarePaginator
     {
@@ -83,7 +117,7 @@ class DeliveryIndex extends Component
             default => AidRequestStatus::approvedStatuses(),
         };
 
-        $query = AidRequest::query()
+        $query = $this->scopedQuery()
             ->with([
                 'family',
                 'items' => fn ($q) => $q->orderBy('sort_order')->select([
@@ -134,11 +168,12 @@ class DeliveryIndex extends Component
             return null;
         }
 
-        return AidRequest::with([
-            'family',
-            'items' => fn ($q) => $q->orderBy('sort_order'),
-            'attachments' => fn ($q) => $q->whereNotNull('aid_request_item_id'),
-        ])
+        return $this->scopedQuery()
+            ->with([
+                'family',
+                'items' => fn ($q) => $q->orderBy('sort_order'),
+                'attachments' => fn ($q) => $q->whereNotNull('aid_request_item_id'),
+            ])
             ->find($this->activeRequestId);
     }
 
@@ -150,7 +185,9 @@ class DeliveryIndex extends Component
     #[Computed]
     public function tabCounts(): array
     {
-        return app(AidRequestStatusCounts::class)->deliveryTabCounts();
+        return app(AidRequestStatusCounts::class)->deliveryTabCounts(
+            $this->scopedQuery()
+        );
     }
 
     #[Computed]
@@ -190,24 +227,22 @@ class DeliveryIndex extends Component
      */
     public function openSubmitReviewPanel(int $requestId): void
     {
-        $this->activeRequestId = $requestId;
+        $request = $this->scopedQuery()
+            ->with(['items' => fn ($q) => $q->where('approved', true)->orderBy('sort_order')])
+            ->findOrFail($requestId);
+
+        $this->activeRequestId = $request->id;
         $this->deliveryNotes = null;
         $this->itemsCostData = [];
         $this->itemAttachments = [];
         $this->rejectionReason = '';
 
-        // تهيئة بيانات التكاليف من البنود المعتمدة
-        $request = AidRequest::with(['items' => fn ($q) => $q->where('approved', true)->orderBy('sort_order')])
-            ->find($requestId);
-
-        if ($request) {
-            foreach ($request->items as $item) {
-                $this->itemsCostData[$item->id] = [
-                    'actual_cost' => (float) ($item->actual_cost ?? $item->estimated_total ?? 0),
-                    'purchase_date' => $item->purchase_date ?? now()->toDateString(),
-                    'purchase_notes' => $item->purchase_notes ?? '',
-                ];
-            }
+        foreach ($request->items as $item) {
+            $this->itemsCostData[$item->id] = [
+                'actual_cost' => (float) ($item->actual_cost ?? $item->estimated_total ?? 0),
+                'purchase_date' => $item->purchase_date ?? now()->toDateString(),
+                'purchase_notes' => $item->purchase_notes ?? '',
+            ];
         }
     }
 
@@ -216,6 +251,8 @@ class DeliveryIndex extends Component
      */
     public function openReviewPanel(int $requestId): void
     {
+        abort_unless($this->canReviewDelivery, 403);
+
         $this->activeRequestId = $requestId;
         $this->deliveryNotes = null;
         $this->itemsCostData = [];
@@ -239,7 +276,7 @@ class DeliveryIndex extends Component
      */
     public function startExecution(int $requestId, DeliveryService $service): void
     {
-        $request = AidRequest::findOrFail($requestId);
+        $request = $this->scopedQuery()->findOrFail($requestId);
         $service->startExecution($request);
 
         $this->dispatch('toast', message: 'تم بدء تنفيذ الطلب. يمكنك الآن إدخال التكاليف ورفع المستندات.', type: 'success');
@@ -270,7 +307,7 @@ class DeliveryIndex extends Component
             ];
         }
 
-        $request = AidRequest::findOrFail($this->activeRequestId);
+        $request = $this->scopedQuery()->findOrFail($this->activeRequestId);
         $service->submitForDeliveryReview($request, $itemsData, $this->deliveryNotes);
 
         // حفظ مرفقات كل بند (فواتير، مستندات شراء)
@@ -331,6 +368,8 @@ class DeliveryIndex extends Component
      */
     public function confirmDelivery(DeliveryService $service): void
     {
+        abort_unless($this->canReviewDelivery, 403);
+
         if (! $this->activeRequestId) {
             return;
         }
@@ -348,6 +387,8 @@ class DeliveryIndex extends Component
      */
     public function rejectDelivery(DeliveryService $service): void
     {
+        abort_unless($this->canReviewDelivery, 403);
+
         if (! $this->activeRequestId || empty($this->rejectionReason)) {
             $this->addError('rejectionReason', 'يجب ذكر سبب الرفض.');
 

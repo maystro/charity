@@ -14,6 +14,8 @@ class Show extends Component
 
     public function mount(Family $family): void
     {
+        $this->authorize('view', $family);
+
         $this->family = $family->load(['members', 'incomeSources', 'resources', 'burdens', 'housing', 'statusHistories.changer', 'creator', 'approver']);
     }
 

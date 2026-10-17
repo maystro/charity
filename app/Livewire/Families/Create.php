@@ -48,6 +48,7 @@ class Create extends Component
     public function mount(?Family $family = null): void
     {
         if ($family && $family->exists) {
+            $this->authorize('update', $family);
             $this->family = $family;
             $this->form->id = $family->id;
             $this->form->case_number = $family->case_number;
@@ -353,8 +354,10 @@ class Create extends Component
         if ($this->form->id) {
             $data['updated_by'] = Auth::id();
             $family = Family::findOrFail($this->form->id);
+            $this->authorize('update', $family);
             $family->update($data);
         } else {
+            $this->authorize('create', Family::class);
             $data['case_number'] = app(FamilyNumberGenerator::class)->generate();
             $data['created_by'] = Auth::id();
             $data['updated_by'] = Auth::id();

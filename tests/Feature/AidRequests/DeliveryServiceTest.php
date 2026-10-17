@@ -3,13 +3,17 @@
 namespace Tests\Feature\AidRequests;
 
 use App\Enums\AidRequestStatus;
+use App\Livewire\Delivery\DeliveryIndex;
 use App\Models\AidRequest;
+use App\Models\AidRequestAttachment;
 use App\Models\AidRequestItem;
 use App\Models\Alert;
 use App\Models\Family;
 use App\Models\User;
 use App\Services\AidRequests\DeliveryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -340,5 +344,106 @@ class DeliveryServiceTest extends TestCase
         $this->expectExceptionMessage('لا يمكن رفض التسليم إلا للطلبات بانتظار مراجعة التسليم.');
 
         app(DeliveryService::class)->rejectDelivery($aidRequest, 'سبب');
+    }
+
+    // ─── DeliveryIndex Scoping & Authorization ────────────────────────────────
+
+    public function test_delivery_index_scopes_requests_and_counts_for_fieldworker(): void
+    {
+        $fieldworker = User::factory()->fieldworker()->create();
+        $other = User::factory()->fieldworker()->create();
+
+        AidRequest::factory()->approved()->create([
+            'title' => 'طلب مندوب للتنفيذ',
+            'submitted_by' => $fieldworker->id,
+            'created_by' => $fieldworker->id,
+        ]);
+
+        AidRequest::factory()->approved()->create([
+            'title' => 'طلب مندوب آخر للتنفيذ',
+            'submitted_by' => $other->id,
+            'created_by' => $other->id,
+        ]);
+
+        $component = Livewire::actingAs($fieldworker)
+            ->test(DeliveryIndex::class)
+            ->assertSee('طلب مندوب للتنفيذ')
+            ->assertDontSee('طلب مندوب آخر للتنفيذ');
+
+        $this->assertSame(1, $component->get('readyCount'));
+    }
+
+    public function test_fieldworker_cannot_confirm_or_reject_delivery(): void
+    {
+        $fieldworker = User::factory()->fieldworker()->create();
+        $aidRequest = AidRequest::factory()->create([
+            'status' => AidRequestStatus::PendingDeliveryReview->value,
+            'submitted_by' => $fieldworker->id,
+            'created_by' => $fieldworker->id,
+        ]);
+
+        Livewire::actingAs($fieldworker)
+            ->test(DeliveryIndex::class)
+            ->set('activeRequestId', $aidRequest->id)
+            ->call('confirmDelivery')
+            ->assertForbidden();
+
+        Livewire::actingAs($fieldworker)
+            ->test(DeliveryIndex::class)
+            ->set('activeRequestId', $aidRequest->id)
+            ->set('rejectionReason', 'سبب')
+            ->call('rejectDelivery')
+            ->assertForbidden();
+    }
+
+    public function test_attachment_download_requires_aid_request_view_authorization(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('aid-requests/1/invoice.pdf', 'pdf-content');
+
+        $fieldworker = User::factory()->fieldworker()->create();
+        $other = User::factory()->fieldworker()->create();
+
+        $ownRequest = AidRequest::factory()->approved()->create([
+            'submitted_by' => $fieldworker->id,
+            'created_by' => $fieldworker->id,
+        ]);
+
+        $otherRequest = AidRequest::factory()->approved()->create([
+            'submitted_by' => $other->id,
+            'created_by' => $other->id,
+        ]);
+
+        $ownAttachment = AidRequestAttachment::create([
+            'aid_request_id' => $ownRequest->id,
+            'attachment_type_id' => 1,
+            'original_name' => 'invoice.pdf',
+            'stored_name' => 'invoice.pdf',
+            'path' => 'aid-requests/1/invoice.pdf',
+            'disk' => 'local',
+            'mime_type' => 'application/pdf',
+            'size' => 11,
+            'uploaded_by' => $fieldworker->id,
+        ]);
+
+        $otherAttachment = AidRequestAttachment::create([
+            'aid_request_id' => $otherRequest->id,
+            'attachment_type_id' => 1,
+            'original_name' => 'invoice.pdf',
+            'stored_name' => 'invoice.pdf',
+            'path' => 'aid-requests/1/invoice.pdf',
+            'disk' => 'local',
+            'mime_type' => 'application/pdf',
+            'size' => 11,
+            'uploaded_by' => $other->id,
+        ]);
+
+        $this->actingAs($fieldworker)
+            ->get(route('attachments.download', $ownAttachment))
+            ->assertOk();
+
+        $this->actingAs($fieldworker)
+            ->get(route('attachments.download', $otherAttachment))
+            ->assertForbidden();
     }
 }
