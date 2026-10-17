@@ -7,6 +7,8 @@ use App\Livewire\Shared\PendingApprovalsStat;
 use App\Models\Family;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -60,5 +62,43 @@ class PendingApprovalsStatTest extends TestCase
 
         $this->assertCount(5, $component->get('topPendingFamilies'));
         $this->assertSame(7, $component->get('pendingCount'));
+    }
+
+    public function test_top_pending_families_survives_serialized_cache_hit(): void
+    {
+        config(['cache.default' => 'database']);
+        Cache::forgetDriver('database');
+
+        $family = Family::factory()->underReview()->create(['case_name' => 'أسرة مخزنة']);
+
+        // First render populates the serialized database cache
+        Livewire::test(PendingApprovalsStat::class)
+            ->assertSet('pendingCount', 1);
+
+        // Second render hits the serialized database cache and unserializes the Collection
+        $second = Livewire::test(PendingApprovalsStat::class);
+        $top = $second->get('topPendingFamilies');
+
+        $this->assertInstanceOf(Collection::class, $top);
+        $this->assertCount(1, $top);
+        $this->assertTrue($top->contains('id', $family->id));
+    }
+
+    public function test_recovers_if_cached_snapshot_contains_incomplete_class(): void
+    {
+        $family = Family::factory()->underReview()->create(['case_name' => 'أسرة سليمة']);
+
+        $incomplete = unserialize(serialize(collect([$family])), ['allowed_classes' => false]);
+        Cache::put('topbar_stats.'.auth()->id().'.pending_approvals', [
+            'count' => 1,
+            'top' => $incomplete,
+        ], 90);
+
+        $component = Livewire::test(PendingApprovalsStat::class);
+        $top = $component->get('topPendingFamilies');
+
+        $this->assertInstanceOf(Collection::class, $top);
+        $this->assertCount(1, $top);
+        $this->assertTrue($top->contains('id', $family->id));
     }
 }

@@ -19,7 +19,7 @@
                     icon="cloud-arrow-down"
                     @click="start('compare', $wire)"
                     :loading="$isScanning"
-                    :disabled="$isDeploying"
+                    :disabled="$isDeploying || ! $isServerConfigured"
                 >
                     مقارنة مع السيرفر
                 </x-ui.button>

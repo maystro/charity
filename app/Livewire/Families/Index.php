@@ -87,7 +87,6 @@ class Index extends Component
         // المندوب: يرى الأسر التي قام بإرسالها أو المرتبطة ببطاقته الميداني.
         return Family::query()->where(function ($q) use ($user) {
             $q->where('submitted_by', $user->id)
-                ->orWhere('created_by', $user->id)
                 ->orWhere('fieldworker_id', $user->fieldworker?->id);
         });
     }

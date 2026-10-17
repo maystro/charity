@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Deployments;
 
+use App\Livewire\Deployments\SmartDeployment as SmartDeploymentComponent;
 use App\Models\SmartDeployment;
 use App\Models\User;
 use App\Services\Deployment\SmartDeploymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -407,5 +409,18 @@ class SmartDeploymentTest extends TestCase
             ->assertSee('النشر الذكي')
             ->assertSee('فحص محلي')
             ->assertSee('مقارنة مع السيرفر');
+    }
+
+    public function test_scan_server_changes_does_not_show_duplicate_error_when_server_url_unconfigured(): void
+    {
+        config(['deployment.smart.server_url' => '']);
+
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(SmartDeploymentComponent::class)
+            ->call('scanServerChanges')
+            ->assertSet('errorMessage', null)
+            ->assertSet('currentStatus', 'idle')
+            ->assertDontSee('لا يمكن مقارنة السيرفر بدون deployer.php');
     }
 }

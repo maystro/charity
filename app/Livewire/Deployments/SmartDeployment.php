@@ -151,6 +151,11 @@ class SmartDeployment extends Component
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
 
         $this->refreshSetupState();
+
+        if (! $this->isServerConfigured) {
+            return;
+        }
+
         $this->isScanning = true;
         $this->currentStatus = 'scanning';
         $this->errorMessage = null;

@@ -56,7 +56,7 @@ class ProjectSnapshot
      */
     public function scan(?string $root = null, array $excludes = self::DEFAULT_EXCLUDES, ?array $allowedPaths = null): array
     {
-        $root = rtrim($root ?: base_path(), DIRECTORY_SEPARATOR);
+        $root = rtrim($root ?: base_path(), '/\\');
         $allowedPaths ??= DeploymentPaths::allowed();
 
         $snapshot = [];
@@ -70,7 +70,7 @@ class ProjectSnapshot
                 continue;
             }
 
-            $relative = ltrim(Str::after($file->getPathname(), $root), DIRECTORY_SEPARATOR);
+            $relative = str_replace('\\', '/', ltrim(Str::after($file->getPathname(), $root), '/\\'));
 
             if ($this->isExcluded($relative, $excludes) || $this->isSkippedFilename($relative)) {
                 continue;
