@@ -13,6 +13,7 @@
     data-font-size="{{ $fontSize }}"
     data-ui-density="{{ $uiDensity }}"
     data-reduced-motion="{{ $reducedMotion }}"
+    data-no-progress-bar
 >
 <head>
     <meta charset="utf-8">
@@ -38,6 +39,9 @@
     @livewireStyles
 </head>
 <body class="bg-[var(--accent-50)] text-[var(--color-text-primary)] antialiased">
+    {{-- Single RTL navigation progress bar (Livewire's own bar is disabled) --}}
+    <div id="progress-bar"></div>
+
     <div id="app-shell" class="flex h-screen overflow-hidden" style="gap: var(--shell-gap); padding: var(--outer-gap);">
         {{-- Sidebar (right column) --}}
         <livewire:sidebar />

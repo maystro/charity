@@ -343,16 +343,23 @@ table tbody tr {
     background: color-mix(in srgb, var(--accent-500) 55%, transparent);
 }
 
-/* Top Progress Bar */
+/* Top Progress Bar — the only navigation bar in the app (RTL: grows from the right).
+   Livewire's built-in NProgress bar is disabled in layouts via data-no-progress-bar. */
 #progress-bar {
     position: fixed;
     top: 0;
     right: 0;
+    left: auto;
     width: 0;
     height: 3px;
     background: var(--accent-500);
     z-index: 9999;
-    transition: width var(--motion-normal) ease;
+    transition: width var(--motion-normal) ease, opacity var(--motion-fast) ease;
+}
+
+/* Safety net: if Livewire ever injects its own NProgress bar, keep a single bar visible. */
+#nprogress {
+    display: none !important;
 }
 
 /* Selection */

@@ -33,6 +33,8 @@ class LoginFlowTest extends TestCase
         $response->assertSee('جمعية التضامن الأجتماعي - بني سويف');
         $response->assertSee('جمعية عهد الخير للتنمية والخدمات');
         $response->assertSee('media/organization/logo.png');
+        $response->assertSee('data-no-progress-bar', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'id="progress-bar"'));
     }
 
     public function test_authenticated_user_is_redirected_from_login(): void
@@ -102,6 +104,43 @@ class LoginFlowTest extends TestCase
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_login_with_remember_me_persists_remember_token(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'remember_user',
+            'password' => 'password123',
+            'remember_token' => null,
+        ]);
+
+        Livewire::test('login')
+            ->set('username', 'remember_user')
+            ->set('password', 'password123')
+            ->set('remember', true)
+            ->call('login')
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->remember_token);
+    }
+
+    public function test_login_without_remember_me_does_not_persist_remember_token(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'no_remember_user',
+            'password' => 'password123',
+            'remember_token' => null,
+        ]);
+
+        Livewire::test('login')
+            ->set('username', 'no_remember_user')
+            ->set('password', 'password123')
+            ->call('login')
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->remember_token);
     }
 
     public function test_invalid_username_fails_login(): void

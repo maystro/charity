@@ -33,6 +33,18 @@ class AppShellTest extends TestCase
             ->assertSee('لوحة التحكم');
     }
 
+    public function test_app_layout_renders_a_single_rtl_progress_bar(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('id="progress-bar"', false);
+        $response->assertSee('data-no-progress-bar', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'id="progress-bar"'));
+    }
+
     public function test_sidebar_component_renders_for_authenticated_user(): void
     {
         $user = User::factory()->admin()->create();

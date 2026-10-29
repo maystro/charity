@@ -3,7 +3,7 @@
     $organizationName = \App\Models\SystemSetting::get('organization_name', config('app.name', 'منشأة خيرية'));
     $organizationTagline = \App\Models\SystemSetting::get('organization_tagline', 'نظام إدارة منشأة خيرية');
 @endphp
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-no-progress-bar>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

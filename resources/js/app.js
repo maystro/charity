@@ -113,28 +113,58 @@ function bindSidebarScrollPersistence() {
 
 bindSidebarScrollPersistence();
 
+function resetProgressBar() {
+    if (window._progressInterval) {
+        clearInterval(window._progressInterval);
+        window._progressInterval = null;
+    }
+
+    const bar = document.getElementById('progress-bar');
+    if (!bar) {
+        return;
+    }
+
+    bar.style.opacity = '0';
+    bar.style.width = '0%';
+}
+
 document.addEventListener('livewire:navigate', () => {
     saveSidebarScrollPosition();
 
     const bar = document.getElementById('progress-bar');
-    if (bar) {
-        bar.style.width = '0%';
-        bar.style.opacity = '1';
-        let progress = 0;
-        const reduced = document.documentElement.getAttribute('data-reduced-motion') === 'true';
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress > 90) progress = 90;
-            bar.style.width = progress + '%';
-        }, reduced ? 50 : 100);
-        window._progressInterval = interval;
+    if (!bar) {
+        return;
     }
+
+    resetProgressBar();
+
+    bar.style.width = '0%';
+    bar.style.opacity = '1';
+
+    let progress = 0;
+    const reduced = document.documentElement.getAttribute('data-reduced-motion') === 'true';
+
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        bar.style.width = progress + '%';
+    }, reduced ? 50 : 100);
+
+    window._progressInterval = interval;
+
+    // Safety net: never leave the bar stuck mid-way if the navigation fails.
+    setTimeout(() => {
+        if (window._progressInterval === interval) {
+            resetProgressBar();
+        }
+    }, 15000);
 });
 
-document.addEventListener('livewire:navigate:finish', () => {
+document.addEventListener('livewire:navigated', () => {
     const bar = document.getElementById('progress-bar');
     if (bar) {
         if (window._progressInterval) clearInterval(window._progressInterval);
+        window._progressInterval = null;
         bar.style.width = '100%';
         const reduced = document.documentElement.getAttribute('data-reduced-motion') === 'true';
         setTimeout(() => {
@@ -163,14 +193,8 @@ document.addEventListener('livewire:navigate:finish', () => {
     });
 });
 
-document.addEventListener('livewire:navigate:error', () => {
-    const bar = document.getElementById('progress-bar');
-    if (bar) {
-        if (window._progressInterval) clearInterval(window._progressInterval);
-        bar.style.opacity = '0';
-        bar.style.width = '0%';
-    }
-});
+// Livewire has no dedicated navigate-error event; the timeout guard above resets
+// the bar when a navigation never completes.
 
 // Connectivity Manager
 (function() {
