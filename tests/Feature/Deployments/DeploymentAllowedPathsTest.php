@@ -137,11 +137,17 @@ class DeploymentAllowedPathsTest extends TestCase
         $this->assertContains('storage', $disabled);
         $this->assertContains('vendor', $disabled);
         $this->assertContains('node_modules', $disabled);
+        $this->assertContains('.agents', $disabled);
+        $this->assertContains('tests', $disabled);
+        $this->assertContains('docs', $disabled);
 
         // لا تظهر ضمن العناصر القابلة للاختيار
         $enabled = array_column($test->get('allowedEntries'), 'path');
         $this->assertNotContains('storage', $enabled);
         $this->assertNotContains('vendor', $enabled);
+        $this->assertNotContains('.agents', $enabled);
+        $this->assertNotContains('tests', $enabled);
+        $this->assertNotContains('docs', $enabled);
 
         // تحديد الكل لا يشمل العناصر المعطّلة أبدًا
         $test->call('selectAllPaths')

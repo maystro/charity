@@ -32,8 +32,6 @@ $INCLUDE_PATHS = [
     'bootstrap',
     'composer.json',
     'composer.lock',
-    'package.json',
-    'vite.config.js',
     'artisan',
 ];
 
@@ -45,6 +43,8 @@ $EXCLUDE_WITHIN = [
     'node_modules',
     'vendor',
     'storage',
+    'tests',
+    'docs',
 ];
 
 function project_root(): string

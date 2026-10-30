@@ -190,8 +190,6 @@ return [
             'bootstrap',
             'composer.json',
             'composer.lock',
-            'package.json',
-            'vite.config.js',
             'artisan',
         ],
 
@@ -204,6 +202,8 @@ return [
             'node_modules',
             'vendor',
             'storage',
+            'tests',
+            'docs',
         ],
     ],
 ];

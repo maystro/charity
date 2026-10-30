@@ -161,7 +161,18 @@ class SmartDeploymentTest extends TestCase
         $this->assertFalse($service->shouldIncludeFile('.gitignore'));
         $this->assertFalse($service->shouldIncludeFile('public/storage/logo.png'));
         $this->assertFalse($service->shouldIncludeFile('bootstrap/cache/config.php'));
+        $this->assertFalse($service->shouldIncludeFile('tests/Feature/ExampleTest.php'));
         $this->assertTrue($service->shouldIncludeFile('app/Models/User.php'));
+    }
+
+    public function test_local_scan_omits_ai_helper_and_frontend_tooling_files(): void
+    {
+        $added = $this->service()->getLocalChanges()['added'];
+
+        $this->assertNotContains('package.json', $added);
+        $this->assertNotContains('vite.config.js', $added);
+        $this->assertNotContains('AGENTS.md', $added);
+        $this->assertNotContains('phpunit.xml', $added);
     }
 
     // -----------------------------------------------------------------

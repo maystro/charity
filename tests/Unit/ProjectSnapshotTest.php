@@ -120,6 +120,36 @@ class ProjectSnapshotTest extends TestCase
         $this->assertNotContains('README.md', $paths);
     }
 
+    public function test_default_excludes_block_ai_and_helper_paths_even_if_allowlisted(): void
+    {
+        mkdir($this->root.'/.agents/skills', 0755, true);
+        mkdir($this->root.'/.claude', 0755, true);
+        mkdir($this->root.'/docs', 0755, true);
+        mkdir($this->root.'/tests', 0755, true);
+        file_put_contents($this->root.'/.agents/skills/SKILL.md', '# skill');
+        file_put_contents($this->root.'/.claude/settings.json', '{}');
+        file_put_contents($this->root.'/docs/guide.md', 'docs');
+        file_put_contents($this->root.'/tests/ExampleTest.php', '<?php');
+        file_put_contents($this->root.'/AGENTS.md', '# agents');
+        file_put_contents($this->root.'/package.json', '{}');
+        file_put_contents($this->root.'/vite.config.js', '');
+
+        $snapshot = (new ProjectSnapshot)->scan(
+            $this->root,
+            ProjectSnapshot::DEFAULT_EXCLUDES,
+            ['.agents', '.claude', 'docs', 'tests', 'AGENTS.md', 'package.json', 'vite.config.js', 'app'],
+        );
+
+        $this->assertArrayHasKey('app/User.php', $snapshot);
+        $this->assertArrayNotHasKey('.agents/skills/SKILL.md', $snapshot);
+        $this->assertArrayNotHasKey('.claude/settings.json', $snapshot);
+        $this->assertArrayNotHasKey('docs/guide.md', $snapshot);
+        $this->assertArrayNotHasKey('tests/ExampleTest.php', $snapshot);
+        $this->assertArrayNotHasKey('AGENTS.md', $snapshot);
+        $this->assertArrayNotHasKey('package.json', $snapshot);
+        $this->assertArrayNotHasKey('vite.config.js', $snapshot);
+    }
+
     public function test_hidden_dot_folders_outside_allowlist_are_excluded(): void
     {
         mkdir($this->root.'/.agents/skills', 0755, true);
